@@ -1,0 +1,5 @@
+{
+"type":"clientToken",
+"hostId":"<host-id>",
+"clientId":"<client-id>"
+}
