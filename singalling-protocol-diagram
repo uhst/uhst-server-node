@@ -1,0 +1,19 @@
+title UHST Signalling Protocol
+
+Host->Signalling Server: POST /?action=host&hostId=example
+#token 
+Signalling Server->Host: Host configuration
+Host->Signalling Server: GET /?token=hostToken
+note right of Host: EventSource Server Sent Events
+Client->Signalling Server: POST /?action=join&hostId=example
+Signalling Server->Client: Client configuration
+Client->Signalling Server: GET /?token=clientToken
+note left of Client: EventSource Server Sent Events
+Client->Signalling Server: POST /?token=clientToken
+Signalling Server->Host: Client Offer
+Host->Signalling Server: POST /?token=hostToken
+Signalling Server->Client: Host answer
+Client->Signalling Server: POST /?token=clientToken
+Signalling Server->Host: Client ICE Candidate
+Host->Signalling Server: POST /?token=hostToken
+Signalling Server->Client: Host ICE Candidate
