@@ -1,5 +1,7 @@
 {
-"hostId:"<some-host-id>",
+"hostId":"<some-host-id>",
 "iceServers":[],
-"token":"<jwt-token-for-host>"
+"token":"<jwt-token-for-host>",
+"sendUrl":"https://signalling-server/",
+"receiveUrl":"https://signalling-server/"
 }
