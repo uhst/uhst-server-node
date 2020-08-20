@@ -1,0 +1,5 @@
+{
+"hostId:"<some-host-id>",
+"iceServers":[],
+"token":"<jwt-token-for-host>"
+}
