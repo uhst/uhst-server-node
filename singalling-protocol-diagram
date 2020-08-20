@@ -10,10 +10,10 @@ Signalling Server->Client: Client configuration
 Client->Signalling Server: GET /?token=clientToken
 note left of Client: EventSource Server Sent Events
 Client->Signalling Server: POST /?token=clientToken
-Signalling Server->Host: Client Offer
+Signalling Server->Host: Client Offer & responseToken
 Host->Signalling Server: POST /?token=responseToken
 Signalling Server->Client: Host answer
 Client->Signalling Server: POST /?token=clientToken
-Signalling Server->Host: Client ICE Candidate
+Signalling Server->Host: Client ICE Candidate & responseToken
 Host->Signalling Server: POST /?token=responseToken
 Signalling Server->Client: Host ICE Candidate
