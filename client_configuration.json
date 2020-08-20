@@ -1,6 +1,6 @@
 {
 "iceServers":[],
-"token":"<jwt-token-for-client>",
+"clientToken":"<jwt-token-for-client>",
 "sendUrl":"https://signalling-server/",
 "receiveUrl":"https://signalling-server/"
 }
