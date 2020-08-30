@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "commonjs",
+    "target": "es2016",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "strictFunctionTypes": false,
+    "noUnusedLocals": false,
+    "lib": [
+      "es7"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
