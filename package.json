@@ -13,7 +13,8 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "start": "npm run clean && tsc-watch --onSuccess \"node ./dist/src/server.js\"",
-    "test": "npm run clean && tsc-watch --onSuccess \"mocha dist/test/**/*.test.js\"",
+    "test": "npm run clean && npm run build && mocha dist/test/**/*.test.js --exit",
+    "test-watch": "npm run clean && tsc-watch --onSuccess \"mocha dist/test/**/*.test.js\"",
     "lint": "tslint -t verbose \"src/**/*.ts\" \"test/**/*.ts\"",
     "dist": "npm run clean && npm run build && copyfiles bin/* package.json README.md LICENSE dist",
     "npmjs": "npm run dist && npm publish ./dist --access public"
@@ -54,7 +55,6 @@
     "@types/pubsub-js": "^1.8.0",
     "@types/supertest": "^2.0.10",
     "@types/uuid": "^8.3.0",
-    "@types/webrtc": "0.0.26",
     "chai": "^4.2.0",
     "copyfiles": "^2.3.0",
     "eventsource": "^1.0.7",
