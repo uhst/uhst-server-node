@@ -1,6 +1,6 @@
 {
   "name": "uhst-server",
-  "version": "0.0.1",
+  "version": "0.0.0-development",
   "description": "User Hosted Secure Transmission signalling server for NodeJS",
   "bin": {
     "uhst": "./bin/uhst"
@@ -17,11 +17,12 @@
     "test-watch": "npm run clean && tsc-watch --onSuccess \"mocha dist/test/**/*.test.js\"",
     "lint": "tslint -t verbose \"src/**/*.ts\" \"test/**/*.ts\"",
     "dist": "npm run clean && npm run build && copyfiles bin/* package.json README.md LICENSE dist",
-    "npmjs": "npm run dist && npm publish ./dist --access public"
+    "npmjs": "npm run dist && npm publish ./dist --access public",
+    "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uhst/uhst-server-node.git"
+    "url": "https://github.com/uhst/uhst-server-node.git"
   },
   "keywords": [
     "webrtc",
@@ -60,9 +61,11 @@
     "eventsource": "^1.0.7",
     "mocha": "^8.1.1",
     "nodemon": "^2.0.4",
+    "semantic-release-cli": "^5.4.0",
     "supertest": "^4.0.2",
     "tsc-watch": "^4.2.9",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "semantic-release": "^17.1.1"
   },
   "engines": {
     "node": ">=5.0.0"
