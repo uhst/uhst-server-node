@@ -21,20 +21,26 @@ const connections: Map<String, SenderFunction> = new Map();
  * be used, otherwise a random uudiv4 id will be generated.
  * The host uses the hostToken to listen for offers from clients,
  * note: hostToken cannot be used to respond to offers.
+ * If the hostId is an active connection with the same hostId
+ * then this endpoint returns error 400.
  * 
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
 export const initHost = (req: Request, res: Response) => {
     const hostId = req.query.hostId as string ?? uuidv4();
-    const hostToken: HostTokenPayload = {
-        type: TokenType.HOST,
-        hostId: hostId
+    if (connections.has(hostId)) {
+        res.sendStatus(400);
+    } else {
+        const hostToken: HostTokenPayload = {
+            type: TokenType.HOST,
+            hostId: hostId
+        }
+        const config: HostConfiguration = {
+            hostId: hostId,
+            hostToken: signToken(hostToken)
+        }
+        res.send(config);
     }
-    const config: HostConfiguration = {
-        hostId: hostId,
-        hostToken: signToken(hostToken)
-    }
-    res.send(config);
 };
 
 /**
