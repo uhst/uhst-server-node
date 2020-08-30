@@ -36,6 +36,26 @@ describe("POST /?action=host&hostId=test", () => {
                 expect(tokenPayload.type, "toke type should be hostToken").to.equal("hostToken");
             }).end(done);
     });
+    it("should return 400 because the hostId is already in use", (done) => {
+        const hostTokenPayload: HostTokenPayload = {
+            type: TokenType.HOST,
+            hostId: "test"
+        }
+        const hostToken = signToken(hostTokenPayload);
+        const stream = new EventSource(`${base}/?token=${hostToken}`);
+        stream.onopen = () => {
+            request(server).post("/?action=host&hostId=test")
+            .expect(400, (result) => {
+                stream.close();
+                done(result);
+            });
+        };
+        stream.onerror = (evt: MessageEvent) => {
+            console.error(evt);
+            stream.close();
+            done(evt);
+        };
+    });
 });
 
 describe("POST /?action=join&hostId=test", () => {
