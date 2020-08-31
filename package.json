@@ -68,5 +68,8 @@
   },
   "engines": {
     "node": ">=5.0.0"
+  },
+  "release": {
+    "pkgRoot": "dist"
   }
 }
