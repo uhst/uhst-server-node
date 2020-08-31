@@ -16,8 +16,7 @@
     "test": "npm run clean && npm run build && mocha dist/test/**/*.test.js --exit",
     "test-watch": "npm run clean && tsc-watch --onSuccess \"mocha dist/test/**/*.test.js\"",
     "lint": "tslint -t verbose \"src/**/*.ts\" \"test/**/*.ts\"",
-    "dist": "npm run clean && npm run build && copyfiles bin/* package.json README.md LICENSE dist",
-    "npmjs": "npm run dist && npm publish ./dist --access public",
+    "dist": "npm test && copyfiles bin/* package.json README.md LICENSE dist",
     "semantic-release": "semantic-release"
   },
   "repository": {
@@ -70,6 +69,10 @@
     "node": ">=5.0.0"
   },
   "release": {
-    "pkgRoot": "dist"
+    "pkgRoot": "dist",
+    "assets": [
+      "dist/*.zip",
+      "dist/*.tar.gz"
+    ]
   }
 }
