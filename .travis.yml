@@ -16,5 +16,5 @@ jobs:
         provider: script
         skip_cleanup: true
         script:
-          - npm dist
+          - npx copyfiles bin/* package.json README.md LICENSE dist
           - npx semantic-release
