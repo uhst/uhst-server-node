@@ -54,7 +54,7 @@ export const initHost = (req: Request, res: Response) => {
  */
 export const initClient = (req: Request, res: Response) => {
     const hostId = req.query.hostId as string;
-    if (!hostId) {
+    if (!connections.has(hostId)) {
         res.sendStatus(400);
     } else {
         const clientToken: ClientTokenPayload = {

@@ -45,10 +45,10 @@ describe("POST /?action=host&hostId=test", () => {
         const stream = new EventSource(`${base}/?token=${hostToken}`);
         stream.onopen = () => {
             request(server).post("/?action=host&hostId=test")
-            .expect(400, (result) => {
-                stream.close();
-                done(result);
-            });
+                .expect(400, (result) => {
+                    stream.close();
+                    done(result);
+                });
         };
         stream.onerror = (evt: MessageEvent) => {
             console.error(evt);
@@ -58,15 +58,38 @@ describe("POST /?action=host&hostId=test", () => {
     });
 });
 
+describe("POST /?action=join&hostId=nohost", () => {
+    it("should return 400 because the hostId is not in use", (done) => {
+        request(server).post("/?action=join&hostId=nohost")
+            .expect(400, (result) => {
+                done(result);
+            });
+    });
+});
+
 describe("POST /?action=join&hostId=test", () => {
     it("should return ClientConfiguration with clientToken", (done) => {
-        request(server).post("/?action=join&hostId=test")
+        const hostTokenPayload: HostTokenPayload = {
+            type: TokenType.HOST,
+            hostId: "test"
+        }
+        const hostToken = signToken(hostTokenPayload);
+        const stream = new EventSource(`${base}/?token=${hostToken}`);
+        stream.onopen = () => {
+            request(server).post("/?action=join&hostId=test")
             .expect((res) => {
                 const config: ClientConfiguration = JSON.parse(res.text);
                 const tokenPayload: ClientTokenPayload = decodeToken(config.clientToken) as ClientTokenPayload;
                 expect(config.clientToken, "clientToken should not be null").to.not.be.null;
                 expect(tokenPayload.type, "toke type should be hostToken").to.equal("clientToken");
+                stream.close();
             }).end(done);
+        };
+        stream.onerror = (evt: MessageEvent) => {
+            console.error(evt);
+            stream.close();
+            done(evt);
+        };
     });
 });
 
