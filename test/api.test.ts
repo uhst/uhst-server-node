@@ -55,7 +55,7 @@ describe("POST /?action=host&hostId=test", () => {
             stream.close();
             done(evt);
         };
-    });
+    }).timeout(10000);
 });
 
 describe("POST /?action=join&hostId=nohost", () => {
@@ -77,20 +77,20 @@ describe("POST /?action=join&hostId=test", () => {
         const stream = new EventSource(`${base}/?token=${hostToken}`);
         stream.onopen = () => {
             request(server).post("/?action=join&hostId=test")
-            .expect((res) => {
-                const config: ClientConfiguration = JSON.parse(res.text);
-                const tokenPayload: ClientTokenPayload = decodeToken(config.clientToken) as ClientTokenPayload;
-                expect(config.clientToken, "clientToken should not be null").to.not.be.null;
-                expect(tokenPayload.type, "toke type should be hostToken").to.equal("clientToken");
-                stream.close();
-            }).end(done);
+                .expect((res) => {
+                    const config: ClientConfiguration = JSON.parse(res.text);
+                    const tokenPayload: ClientTokenPayload = decodeToken(config.clientToken) as ClientTokenPayload;
+                    expect(config.clientToken, "clientToken should not be null").to.not.be.null;
+                    expect(tokenPayload.type, "toke type should be hostToken").to.equal("clientToken");
+                    stream.close();
+                }).end(done);
         };
         stream.onerror = (evt: MessageEvent) => {
             console.error(evt);
             stream.close();
             done(evt);
         };
-    });
+    }).timeout(10000);
 });
 
 describe("GET /?token=host", () => {
@@ -111,11 +111,11 @@ describe("GET /?token=host", () => {
             stream.close();
             done(evt);
         };
-    });
+    }).timeout(10000);
 });
 
 describe("GET /?token=client", () => {
-    it("should return OK", (done) => {
+    it("should return 400 because host is not listening", (done) => {
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testClientGetHostId",
@@ -123,21 +123,13 @@ describe("GET /?token=client", () => {
         }
         const clientToken = signToken(clientTokenPayload);
 
-        const stream = new EventSource(`${base}/?token=${clientToken}`);
-        stream.onopen = (evt: MessageEvent) => {
-            stream.close();
-            done();
-        };
-        stream.onerror = (evt: MessageEvent) => {
-            console.error(evt);
-            stream.close();
-            done(evt);
-        };
+        request(server).get(`/?token=${clientToken}`)
+            .expect(400, done);
     });
 });
 
 describe("POST /?token=host", () => {
-    it("should return 400 because host token is valid only for listening", (done) => {
+    it("should return 400 because no client is listening", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
             hostId: "testHostPost"
@@ -177,18 +169,17 @@ describe("POST /?token=response", () => {
     });
 });
 
-describe("Exchange Offers", () => {
-    let responseToken: string;
+describe("Exchange Messages", () => {
 
-    it("should forward client offer to host", (done) => {
+    it("should forward client message to host", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostReceiveOffer"
+            hostId: "testHostReceiveMessage"
         }
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
-            hostId: "testHostReceiveOffer",
-            clientId: "testClientSendOfferClientId"
+            hostId: "testHostReceiveMessage",
+            clientId: "testClientSendMessageClientId"
         }
         const testMessageFromClient = { test: "client" }
         const clientToken = signToken(clientTokenPayload);
@@ -198,7 +189,6 @@ describe("Exchange Offers", () => {
             expect(evt.data, "Data should be sent with event").to.not.be.null;
             const message: HostMessage = JSON.parse(evt.data);
             expect(message.responseToken).to.not.be.null;
-            responseToken = message.responseToken;
             expect(message.body, "Message should be the same as sent by client").to.deep.equal(testMessageFromClient);
             stream.close();
             done();
@@ -219,47 +209,69 @@ describe("Exchange Offers", () => {
             stream.close();
             done(evt);
         };
-    });
+    }).timeout(20000);
 
-    it("should forward host offer to client", (done) => {
+    it("should forward host message to client", (done) => {
+        const hostTokenPayload: HostTokenPayload = {
+            type: TokenType.HOST,
+            hostId: "testHostReceiveMessage"
+        }
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
-            hostId: "testHostReceiveOffer",
-            clientId: "testClientSendOfferClientId"
+            hostId: "testHostReceiveMessage",
+            clientId: "testClientSendMessageClientId"
+        }
+        const responseTokenPayload: ResponseTokenPayload = {
+            type: TokenType.RESPONSE,
+            hostId: "testHostReceiveMessage",
+            clientId: "testClientSendMessageClientId"
         }
         const testMessageFromHost = { test: "host" }
+        const responseToken = signToken(responseTokenPayload);
         const clientToken = signToken(clientTokenPayload);
-        const stream = new EventSource(`${base}/?token=${clientToken}`);
-        stream.addEventListener("message", (evt: MessageEvent) => {
-            expect(evt.data, "Data should be sent with event").to.not.be.null;
-            const message: Message = JSON.parse(evt.data);
-            expect(message.body, "Message should be the same as sent by host").to.deep.equal(testMessageFromHost);
-            stream.close();
-            done();
-        });
-        stream.onopen = (evt: MessageEvent) => {
-            request(server).post(`/?token=${responseToken}`).send(testMessageFromHost)
-                .expect(200, (result: any) => {
-                    if (result) {
-                        // error on post
-                        stream.close();
-                        done(result);
-                    }
-                });
+        const hostToken = signToken(hostTokenPayload);
+        const host_stream = new EventSource(`${base}/?token=${hostToken}`);
+        host_stream.onopen = (evt: MessageEvent) => {
+            const client_stream = new EventSource(`${base}/?token=${clientToken}`);
+            client_stream.addEventListener("message", (evt: MessageEvent) => {
+                expect(evt.data, "Data should be sent with event").to.not.be.null;
+                const message: Message = JSON.parse(evt.data);
+                expect(message.body, "Message should be the same as sent by host").to.deep.equal(testMessageFromHost);
+                client_stream.close();
+                host_stream.close();
+                done();
+            });
+            client_stream.onopen = (evt: MessageEvent) => {
+                request(server).post(`/?token=${responseToken}`).send(testMessageFromHost)
+                    .expect(200, (result: any) => {
+                        if (result) {
+                            client_stream.close();
+                            host_stream.close();
+                            done(result);
+                        }
+                    });
+
+            };
+            client_stream.onerror = (evt: MessageEvent) => {
+                console.error(evt);
+                client_stream.close();
+                host_stream.close();
+                done(evt);
+            };
 
         };
-        stream.onerror = (evt: MessageEvent) => {
+        host_stream.onerror = (evt: MessageEvent) => {
             console.error(evt);
-            stream.close();
+            host_stream.close();
             done(evt);
         };
-    });
+    }).timeout(20000);
 
     it("should return 400 because client is no longer listening", (done) => {
         const responseTokenPayload: ResponseTokenPayload = {
             type: TokenType.RESPONSE,
-            hostId: "testHostReceiveOffer",
-            clientId: "testClientSendOfferClientId"
+            hostId: "testHostReceiveMessage",
+            clientId: "testClientSendMessageClientId"
         }
         const responseToken = signToken(responseTokenPayload);
 
@@ -270,12 +282,12 @@ describe("Exchange Offers", () => {
     it("should return 400 because host is no longer listening", (done) => {
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
-            hostId: "testHostReceiveOffer",
-            clientId: "testClientSendOfferClientId"
+            hostId: "testHostReceiveMessage",
+            clientId: "testClientSendMessageClientId"
         }
-        const responseToken = signToken(clientTokenPayload);
+        const clientToken = signToken(clientTokenPayload);
 
-        request(server).post(`/?token=${responseToken}`)
+        request(server).post(`/?token=${clientToken}`)
             .expect(400, done);
     });
 });

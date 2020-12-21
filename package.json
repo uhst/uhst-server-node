@@ -1,7 +1,7 @@
 {
   "name": "uhst-server",
   "version": "0.0.0-development",
-  "description": "User Hosted Secure Transmission signalling server for NodeJS",
+  "description": "User Hosted Secure Transmission server for NodeJS",
   "bin": {
     "uhst": "./bin/uhst"
   },
@@ -24,10 +24,11 @@
     "url": "https://github.com/uhst/uhst-server-node.git"
   },
   "keywords": [
-    "webrtc",
+    "realtime",
     "p2p",
     "distributed",
-    "signaling"
+    "streaming",
+    "sse"
   ],
   "author": "Stefan Dimitrov <stefan@dimitrov.li>",
   "private": false,
@@ -60,10 +61,11 @@
     "eventsource": "^1.0.7",
     "mocha": "^8.1.1",
     "nodemon": "^2.0.4",
+    "semantic-release": "^17.1.1",
     "supertest": "^4.0.2",
+    "ts-node": "^9.1.1",
     "tsc-watch": "^4.2.9",
-    "typescript": "^3.9.7",
-    "semantic-release": "^17.1.1"
+    "typescript": "^3.9.7"
   },
   "engines": {
     "node": ">=5.0.0"
