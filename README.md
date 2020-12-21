@@ -2,7 +2,7 @@
 
 # uhst-server-node [![npm version](https://img.shields.io/npm/v/uhst-server.svg?style=flat-square)](https://www.npmjs.com/package/uhst-server) ![license](https://img.shields.io/github/license/mitmadness/UnityInvoker.svg?style=flat-square) [![Travis Build](https://img.shields.io/travis/uhst/uhst-server-node.svg?branch=master&style=flat-square)](https://travis-ci.org/uhst-server-node) ![npm total downloads](https://img.shields.io/npm/dt/uhst-server.svg?style=flat-square)
 
-User Hosted Secure Transmission signalling server in NodeJS
+User Hosted Secure Transmission server in NodeJS
 
 ----------------
 
