@@ -24,7 +24,8 @@ enum ActionTypes { HOST = "host", JOIN = "join" }
  */
 app.post("/", (req, res, next) => { ActionTypes.HOST == req.query.action ? next() : next('route') }, apiController.initHost);
 app.post("/", (req, res, next) => { ActionTypes.JOIN == req.query.action ? next() : next('route') }, apiController.initClient);
-app.post("/", protect, apiController.forwardResponse);
-app.get("/", protect, sse(/* options */ {flushHeaders:true}), apiController.listen);
+app.post("/", protect, apiController.sendMessage);
+app.get("/", protect, sse(/* options */ {flushHeaders:false}), apiController.listen);
+// flushHeaders should be false to allow rejecting the connection after inspecting request (status 400) 
 
 export default app;
