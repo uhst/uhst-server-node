@@ -1,33 +1,41 @@
-"use strict";
-import { Response, Request } from "express";
+'use strict';
+import { Response, Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ISseResponse } from '@toverux/expresse';
-import { signToken } from "./auth";
-import { HostConfiguration } from "../models/HostConfiguration";
-import { ClientConfiguration } from "../models/ClientConfiguration";
-import { TokenPayload, TokenType, HostTokenPayload, ClientTokenPayload, ResponseTokenPayload } from "../models/TokenPayload";
-import { RequestWithUser } from "../models/RequestWithUser";
-import { Message } from "../models/Message";
-import { HostMessage } from "../models/HostMessage";
+import { signToken } from './auth';
+import { HostConfiguration } from '../models/HostConfiguration';
+import { ClientConfiguration } from '../models/ClientConfiguration';
+import { TokenPayload, TokenType, HostTokenPayload, ClientTokenPayload, ResponseTokenPayload } from '../models/TokenPayload';
+import { RequestWithUser } from '../models/RequestWithUser';
+import { Message } from '../models/Message';
+import { HostMessage } from '../models/HostMessage';
 
 interface SenderFunction {
     (message: Message): void;
 }
 
+const isPublicRelay = !process.env.UHST_PRIVATE_RELAY;
+let publicHostIdPrefix = '';
 const hosts: Map<String, Map<String, SenderFunction>> = new Map();
 
 /**
  * Initialize host configuration. If hostId is provided it will
  * be used, otherwise a random uudiv4 id will be generated.
  * The host uses the hostToken to listen for messages from clients,
- * note: hostToken cannot be used to respond to messages.
+ * note: hostToken cannot be used to respond to messages but it can
+ * be used for broadcasting a message to all clients.
  * If the hostId is an active connection with the same hostId
  * then this endpoint returns error 400.
+ * If hostId is specified then appKey must also be specified or this
+ * endpoint returns error 400.
+ * If the UHST_PRIVATE_RELAY environment variable is set to true then
+ * appKey is a required parameter, not providing appKey or providing
+ * wrong appKey will result error 401. 
  * 
- * @route POST /?action=host[&hostId=<optional-host-id>]
+ * @route POST /?action=host[&hostId=<optional-host-id>&appKey=<optional-appKey>]
  */
 export const initHost = (req: Request, res: Response) => {
-    const hostId = req.query.hostId as string ?? uuidv4();
+    const hostId = req.query.hostId as string ?? `${publicHostIdPrefix}-${uuidv4()}`;
     if (isHostConnected(hostId)) {
         res.sendStatus(400);
     } else {
@@ -49,11 +57,15 @@ export const initHost = (req: Request, res: Response) => {
  * messages it returns error 400.
  * Returns clientToken which is required for sending messages
  * to host and listening for message responses from host.
- * 
- * @route POST /?action=join&hostId=<host-id-to-join>
+ * If the UHST_PRIVATE_RELAY environment variable is set to true then
+ * appKey is a required parameter, not providing appKey or providing
+ * wrong appKey will result error 401. 
+ * @route POST /?action=join&hostId=<host-id-to-join>&appKey=<optional-appKey>
  */
 export const initClient = (req: Request, res: Response) => {
     const hostId = req.query.hostId as string;
+    const appKey = req.query.appKey as string;
+
     if (!isHostConnected(hostId)) {
         res.sendStatus(400);
     } else {

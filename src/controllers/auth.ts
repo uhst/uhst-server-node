@@ -1,10 +1,10 @@
-"use strict";
-import jwtHandler = require("express-jwt");
-import jwt = require("jsonwebtoken");
-import { Request } from "express";
-import { Algorithm, SignOptions, VerifyOptions } from "jsonwebtoken";
-import { config as jwtConfig } from "../config/jwt";
-import { TokenPayload } from "../models/TokenPayload";
+'use strict';
+import jwtHandler = require('express-jwt');
+import jwt = require('jsonwebtoken');
+import { NextFunction, Request, Response } from 'express';
+import { Algorithm, SignOptions, VerifyOptions } from 'jsonwebtoken';
+import { config as jwtConfig } from '../config/jwt';
+import { TokenPayload } from '../models/TokenPayload';
 
 /**
  * Returns SignOptions based on JWT configuration,
@@ -47,6 +47,18 @@ export const protect = () => {
             return null;
         }
     });
+}
+
+export const verifyAppKey = (isPublicRelay: boolean, appKey: string) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const hostId = req.query.hostId as string;
+        const providedAppKey = req.query.appKey as string;
+        if ((!isPublicRelay && appKey !== providedAppKey) || (isPublicRelay && hostId && appKey !== providedAppKey)) {
+            res.sendStatus(401);
+        } else {
+            next();
+        }
+    };
 }
 
 export const signToken = (payload: TokenPayload) => {

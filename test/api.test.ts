@@ -13,6 +13,7 @@ import { Message } from "../src/models/Message";
 
 let base = 'http://localhost';
 let server: http.Server;
+const appKey = app.get('appKey');
 before(function listen(done) {
     server = http.createServer(app);
     server = server.listen(0, function listening() {
@@ -24,14 +25,14 @@ before(function listen(done) {
     });
 });
 
-describe("POST /?action=host&hostId=test", () => {
+describe(`POST /?action=host`, () => {
     it("should return HostConfiguration with hostId and hostToken", (done) => {
-        request(server).post("/?action=host&hostId=test")
+        request(server).post(`/?action=host&hostId=test&appKey=${appKey}`)
             .expect((res) => {
                 const config: HostConfiguration = JSON.parse(res.text);
                 const tokenPayload: HostTokenPayload = decodeToken(config.hostToken) as HostTokenPayload;
                 expect(config.hostToken, "hostToken should not be null").to.not.be.null;
-                expect(config.hostId, "hostId should be passed from request to response").to.equal("test");
+                expect(config.hostId, "hostId should be passed from request to response").to.not.be.null;
                 expect(tokenPayload.hostId, "hostId should be encoded in host token").to.equal("test");
                 expect(tokenPayload.type, "toke type should be hostToken").to.equal("hostToken");
             }).end(done);
@@ -44,7 +45,7 @@ describe("POST /?action=host&hostId=test", () => {
         const hostToken = signToken(hostTokenPayload);
         const stream = new EventSource(`${base}/?token=${hostToken}`);
         stream.onopen = () => {
-            request(server).post("/?action=host&hostId=test")
+            request(server).post(`/?action=host&hostId=test&appKey=${appKey}`)
                 .expect(400, (result) => {
                     stream.close();
                     done(result);
