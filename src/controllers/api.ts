@@ -194,7 +194,9 @@ const broadcastMessage = (req: RequestWithUser, res: Response, hostToken: HostTo
             body: req.body
         }
         for (let clientId of clients.keys()) {
-            clientIds.push(clientId.toString());
+            if (clientId !== hostToken.hostId) {
+                clientIds.push(clientId.toString());
+            }
         }
         let result = broadcastToClients(clients, clientIds, message)
         res.json(result);
@@ -224,9 +226,9 @@ const isHostConnected = (hostId: string): boolean => {
     const connections = hosts.get(hostId);
     let result;
     if (!connections) {
-        result= false;
+        result = false;
     } else {
-        result= connections.has(hostId);
+        result = connections.has(hostId);
     }
     return result;
 };
