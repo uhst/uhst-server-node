@@ -267,6 +267,87 @@ describe("Exchange Messages", () => {
         };
     }).timeout(20000);
 
+    it("should broadcast host message to client", (done) => {
+        const hostTokenPayload: HostTokenPayload = {
+            type: TokenType.HOST,
+            hostId: "testHostReceiveMessage"
+        }
+        const clientTokenPayload: ClientTokenPayload = {
+            type: TokenType.CLIENT,
+            hostId: "testHostReceiveMessage",
+            clientId: "testClientSendMessageClientId"
+        }
+        const testMessageFromHost = { test: "host" }
+        const clientToken = signToken(clientTokenPayload);
+        const hostToken = signToken(hostTokenPayload);
+        const host_stream = new EventSource(`${base}/?token=${hostToken}`);
+        host_stream.onopen = (evt: MessageEvent) => {
+            const client_stream = new EventSource(`${base}/?token=${clientToken}`);
+            client_stream.addEventListener("message", (evt: MessageEvent) => {
+                expect(evt.data, "Data should be sent with event").to.not.be.null;
+                const message: Message = JSON.parse(evt.data);
+                expect(message.body, "Message should be the same as sent by host").to.deep.equal(testMessageFromHost);
+                client_stream.close();
+                host_stream.close();
+                done();
+            });
+            client_stream.onopen = (evt: MessageEvent) => {
+                request(server).post(`/?token=${hostToken}`).send(testMessageFromHost)
+                    .expect(200, (result: any) => {
+                        if (result) {
+                            client_stream.close();
+                            host_stream.close();
+                            done(result);
+                        }
+                    });
+
+            };
+            client_stream.onerror = (evt: MessageEvent) => {
+                console.error(evt);
+                client_stream.close();
+                host_stream.close();
+                done(evt);
+            };
+
+        };
+        host_stream.onerror = (evt: MessageEvent) => {
+            console.error(evt);
+            host_stream.close();
+            done(evt);
+        };
+    }).timeout(20000);
+
+    it("should NOT broadcast host message to host", (done) => {
+        const hostTokenPayload: HostTokenPayload = {
+            type: TokenType.HOST,
+            hostId: "testHostBroadcastMessage"
+        }
+        const testMessageFromHost = { test: "host" }
+        const hostToken = signToken(hostTokenPayload);
+        const host_stream = new EventSource(`${base}/?token=${hostToken}`);
+        host_stream.onopen = (evt: MessageEvent) => {
+            host_stream.addEventListener("message", (evt: MessageEvent) => {
+                console.log(evt);
+                host_stream.close();
+                done("Message should not be echoed back to host.");
+            });
+            request(server).post(`/?token=${hostToken}`).send(testMessageFromHost)
+            .expect(200, (result: any) => {
+                if (result) {
+                    host_stream.close();
+                    done(result);
+                }
+                done();
+            });
+
+        };
+        host_stream.onerror = (evt: MessageEvent) => {
+            console.error(evt);
+            host_stream.close();
+            done(evt);
+        };
+    }).timeout(30000);
+
     it("should return 400 because client is no longer listening", (done) => {
         const responseTokenPayload: ResponseTokenPayload = {
             type: TokenType.RESPONSE,
