@@ -25,7 +25,21 @@ before(function listen(done) {
     });
 });
 
-describe(`POST /?action=host`, () => {
+describe("POST /?action=host&hostId=", () => {
+    it("should return HostConfiguration with hostId, see bug #12", (done) => {
+        request(server).post("/?action=host&hostId=")
+            .expect((res) => {
+                const config: HostConfiguration = JSON.parse(res.text);
+                const tokenPayload: HostTokenPayload = decodeToken(config.hostToken) as HostTokenPayload;
+                expect(config.hostToken, "hostToken should not be null").to.not.be.null;
+                expect(config.hostId.length, "hostId should be generated").to.be.greaterThan(0);
+                expect(tokenPayload.hostId.length, "hostId should be encoded in host token").to.be.greaterThan(0);
+                expect(tokenPayload.type, "toke type should be hostToken").to.equal("hostToken");
+            }).end(done);
+    });
+});
+
+describe("POST /?action=host&hostId=test", () => {
     it("should return HostConfiguration with hostId and hostToken", (done) => {
         request(server).post(`/?action=host&hostId=test&appKey=${appKey}`)
             .expect((res) => {

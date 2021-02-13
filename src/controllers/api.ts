@@ -32,8 +32,10 @@ let publicHostIdPrefix : string;
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
 export const initHost = async (req: Request, res: Response) => {
-    publicHostIdPrefix = publicHostIdPrefix ?? await getPublicHostIdPrefix();
-    const hostId = req.query.hostId as string ?? `${publicHostIdPrefix}-${uuidv4()}`;
+    let hostId = req.query.hostId as string;
+    if (!hostId) {
+        hostId =  await getHostId();
+    }
     if (isHostConnected(hostId)) {
         res.sendStatus(400);
     } else {
@@ -143,9 +145,12 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
     }
 };
 
-const getPublicHostIdPrefix = async () => {
+const getHostId = async () => {
     if (isPublicRelay) {
-        
+        // return `${publicHostIdPrefix}-${uuidv4()}`;
+        return `${uuidv4()}`;
+    } else {
+        return uuidv4();
     }
 }
 
