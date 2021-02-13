@@ -27,7 +27,10 @@ const hosts: Map<String, Map<String, SenderFunction>> = new Map();
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
 export const initHost = (req: Request, res: Response) => {
-    const hostId = req.query.hostId as string ?? uuidv4();
+    let hostId = req.query.hostId as string;
+    if (!hostId) {
+        hostId = uuidv4();
+    }
     if (isHostConnected(hostId)) {
         res.sendStatus(400);
     } else {
