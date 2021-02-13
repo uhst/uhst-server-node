@@ -2,6 +2,8 @@
 import { Response, Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ISseResponse } from '@toverux/expresse';
+import fetch from 'node-fetch';
+
 import { signToken } from './auth';
 import { HostConfiguration } from '../models/HostConfiguration';
 import { ClientConfiguration } from '../models/ClientConfiguration';
@@ -14,9 +16,9 @@ interface SenderFunction {
     (message: Message): void;
 }
 
-const isPublicRelay = !process.env.UHST_PRIVATE_RELAY;
-let publicHostIdPrefix = '';
+const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
 const hosts: Map<String, Map<String, SenderFunction>> = new Map();
+let publicHostIdPrefix : string;
 
 /**
  * Initialize host configuration. If hostId is provided it will
@@ -26,15 +28,11 @@ const hosts: Map<String, Map<String, SenderFunction>> = new Map();
  * be used for broadcasting a message to all clients.
  * If the hostId is an active connection with the same hostId
  * then this endpoint returns error 400.
- * If hostId is specified then appKey must also be specified or this
- * endpoint returns error 400.
- * If the UHST_PRIVATE_RELAY environment variable is set to true then
- * appKey is a required parameter, not providing appKey or providing
- * wrong appKey will result error 401. 
  * 
- * @route POST /?action=host[&hostId=<optional-host-id>&appKey=<optional-appKey>]
+ * @route POST /?action=host[&hostId=<optional-host-id>]
  */
-export const initHost = (req: Request, res: Response) => {
+export const initHost = async (req: Request, res: Response) => {
+    publicHostIdPrefix = publicHostIdPrefix ?? await getPublicHostIdPrefix();
     const hostId = req.query.hostId as string ?? `${publicHostIdPrefix}-${uuidv4()}`;
     if (isHostConnected(hostId)) {
         res.sendStatus(400);
@@ -57,15 +55,10 @@ export const initHost = (req: Request, res: Response) => {
  * messages it returns error 400.
  * Returns clientToken which is required for sending messages
  * to host and listening for message responses from host.
- * If the UHST_PRIVATE_RELAY environment variable is set to true then
- * appKey is a required parameter, not providing appKey or providing
- * wrong appKey will result error 401. 
- * @route POST /?action=join&hostId=<host-id-to-join>&appKey=<optional-appKey>
+ * @route POST /?action=join&hostId=<host-id-to-join>
  */
 export const initClient = (req: Request, res: Response) => {
     const hostId = req.query.hostId as string;
-    const appKey = req.query.appKey as string;
-
     if (!isHostConnected(hostId)) {
         res.sendStatus(400);
     } else {
@@ -149,6 +142,12 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
             res.sendStatus(400);
     }
 };
+
+const getPublicHostIdPrefix = async () => {
+    if (isPublicRelay) {
+        
+    }
+}
 
 const broadcastToClients = (clients: Map<String, SenderFunction>, clientIds: string[], message: Message): Map<string, boolean> => {
     let result = new Map<string, boolean>();

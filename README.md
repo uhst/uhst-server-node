@@ -32,13 +32,9 @@ By default it listens on all interfaces and port 3000 (http://0.0.0.0:3000). You
 HOST=127.0.0.1 PORT=80 uhst
 ```
 
-__Note: by default the UHST relay will register with the public relays directory the first time you connect to it using your `appKey`.__  
-This means that other UHST users who have not specified a relay may use your relay and your bandwidth. Please consider that the UHST network exists thanks to the generous bandwidth contribution by our relay operators such as yourself. If you wish to disable this behavior
-and allow connections only with appKey please set the environment variable `UHST_PRIVATE_RELAY=true`:
+__Note: Set UHST_PUBLIC_RELAY=true and UHST relay will register with the public relays directory the first time it receives a GET request to /.__  
+This means that other UHST users who have not specified a relay may use your relay and your bandwidth. Please consider that the UHST network exists thanks to the generous bandwidth contribution by our relay operators such as yourself. If you wish to enable this behavior please set the environment variable `UHST_PUBLIC_RELAY=true`:
 
 ```bash
-UHST_PRIVATE_RELAY=true UHST_APP_KEY=<random-alphanumeric-string> uhst
+UHST_PUBLIC_RELAY=true uhst
 ```
-
-If you don't specify `UHST_APP_KEY` then upon startup the UHST relay will generate a random appKey and print it. If you set `UHST_PRIVATE_RELAY=true` then the UHST client has to include this appKey (case-sensitive) or  connection will be denied
-with error code 401.

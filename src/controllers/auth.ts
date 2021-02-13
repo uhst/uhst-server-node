@@ -49,18 +49,6 @@ export const protect = () => {
     });
 }
 
-export const verifyAppKey = (isPublicRelay: boolean, appKey: string) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const hostId = req.query.hostId as string;
-        const providedAppKey = req.query.appKey as string;
-        if ((!isPublicRelay && appKey !== providedAppKey) || (isPublicRelay && hostId && appKey !== providedAppKey)) {
-            res.sendStatus(401);
-        } else {
-            next();
-        }
-    };
-}
-
 export const signToken = (payload: TokenPayload) => {
     return jwt.sign(payload, jwtConfig.secret, getSignOptions());
 }
