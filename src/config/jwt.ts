@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 import crypto = require('crypto');
 
 export const config = {

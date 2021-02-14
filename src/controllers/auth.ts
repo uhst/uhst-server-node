@@ -1,10 +1,10 @@
-"use strict";
-import jwtHandler = require("express-jwt");
-import jwt = require("jsonwebtoken");
-import { Request } from "express";
-import { Algorithm, SignOptions, VerifyOptions } from "jsonwebtoken";
-import { config as jwtConfig } from "../config/jwt";
-import { TokenPayload } from "../models/TokenPayload";
+'use strict';
+import jwtHandler = require('express-jwt');
+import jwt = require('jsonwebtoken');
+import { NextFunction, Request, Response } from 'express';
+import { Algorithm, SignOptions, VerifyOptions } from 'jsonwebtoken';
+import { config as jwtConfig } from '../config/jwt';
+import { TokenPayload } from '../models/TokenPayload';
 
 /**
  * Returns SignOptions based on JWT configuration,

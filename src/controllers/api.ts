@@ -1,35 +1,41 @@
-"use strict";
-import { Response, Request } from "express";
+'use strict';
+import { Response, Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ISseResponse } from '@toverux/expresse';
-import { signToken } from "./auth";
-import { HostConfiguration } from "../models/HostConfiguration";
-import { ClientConfiguration } from "../models/ClientConfiguration";
-import { TokenPayload, TokenType, HostTokenPayload, ClientTokenPayload, ResponseTokenPayload } from "../models/TokenPayload";
-import { RequestWithUser } from "../models/RequestWithUser";
-import { Message } from "../models/Message";
-import { HostMessage } from "../models/HostMessage";
+import fetch from 'node-fetch';
+import randomize = require('randomatic');
+
+import { signToken } from './auth';
+import { HostConfiguration } from '../models/HostConfiguration';
+import { ClientConfiguration } from '../models/ClientConfiguration';
+import { TokenPayload, TokenType, HostTokenPayload, ClientTokenPayload, ResponseTokenPayload } from '../models/TokenPayload';
+import { RequestWithUser } from '../models/RequestWithUser';
+import { Message } from '../models/Message';
+import { HostMessage } from '../models/HostMessage';
 
 interface SenderFunction {
     (message: Message): void;
 }
 
+const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
 const hosts: Map<String, Map<String, SenderFunction>> = new Map();
+let publicHostIdPrefix: string = '';
 
 /**
  * Initialize host configuration. If hostId is provided it will
  * be used, otherwise a random uudiv4 id will be generated.
  * The host uses the hostToken to listen for messages from clients,
- * note: hostToken cannot be used to respond to messages.
+ * note: hostToken cannot be used to respond to messages but it can
+ * be used for broadcasting a message to all clients.
  * If the hostId is an active connection with the same hostId
  * then this endpoint returns error 400.
  * 
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
-export const initHost = (req: Request, res: Response) => {
+export const initHost = async (req: Request, res: Response) => {
     let hostId = req.query.hostId as string;
     if (!hostId) {
-        hostId = uuidv4();
+        hostId = await getHostId(req);
     }
     if (isHostConnected(hostId)) {
         res.sendStatus(400);
@@ -52,7 +58,6 @@ export const initHost = (req: Request, res: Response) => {
  * messages it returns error 400.
  * Returns clientToken which is required for sending messages
  * to host and listening for message responses from host.
- * 
  * @route POST /?action=join&hostId=<host-id-to-join>
  */
 export const initClient = (req: Request, res: Response) => {
@@ -140,6 +145,37 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
             res.sendStatus(400);
     }
 };
+
+const getHostId = async (req: Request) => {
+    if (isPublicRelay) {
+        if (!publicHostIdPrefix) {
+            try {
+                const url = req.protocol + '://' + req.get('host') + req.path;
+                console.log(`Getting prefix for ${url}`);
+                const res = await fetch('https://api.uhst.io/v1/relays', {
+                    method: 'post',
+                    body: JSON.stringify({ url }),
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const json = await res.json();
+                publicHostIdPrefix = json.prefix;
+            } catch (err) {
+                console.error(`Failed obtaining public prefix. Please ensure you are conneting to the Internet-accessible URL of this relay.`)
+            }
+        }
+        let hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
+        while (isHostConnected(hostId)) {
+            hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
+        }
+        return hostId;
+    } else {
+        let hostId = randomize('0', 6);
+        while (isHostConnected(hostId)) {
+            hostId = randomize('0', 6);
+        }
+        return hostId;
+    }
+}
 
 const broadcastToClients = (clients: Map<String, SenderFunction>, clientIds: string[], message: Message): Map<string, boolean> => {
     let result = new Map<string, boolean>();
