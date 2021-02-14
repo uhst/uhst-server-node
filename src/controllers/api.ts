@@ -150,7 +150,7 @@ const getHostId = async (req: Request) => {
     if (isPublicRelay) {
         if (!publicHostIdPrefix) {
             try {
-                const url = req.protocol + '://' + req.get('host') + req.path;
+                const url = 'https://' + req.get('host') + req.path;
                 console.log(`Getting prefix for ${url}`);
                 const res = await fetch('https://api.uhst.io/v1/relays', {
                     method: 'post',
@@ -160,7 +160,7 @@ const getHostId = async (req: Request) => {
                 const json = await res.json();
                 publicHostIdPrefix = json.prefix;
             } catch (err) {
-                console.error(`Failed obtaining public prefix. Please ensure you are conneting to the Internet-accessible URL of this relay.`)
+                console.error(`Failed obtaining public prefix. Please ensure you are conneting over HTTPS to the Internet-accessible URL of this relay.`)
             }
         }
         let hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
