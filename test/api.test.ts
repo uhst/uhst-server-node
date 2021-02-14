@@ -13,7 +13,6 @@ import { Message } from "../src/models/Message";
 
 let base = 'http://localhost';
 let server: http.Server;
-const appKey = app.get('appKey');
 before(function listen(done) {
     server = http.createServer(app);
     server = server.listen(0, function listening() {
@@ -41,7 +40,7 @@ describe("POST /?action=host&hostId=", () => {
 
 describe("POST /?action=host&hostId=test", () => {
     it("should return HostConfiguration with hostId and hostToken", (done) => {
-        request(server).post(`/?action=host&hostId=test&appKey=${appKey}`)
+        request(server).post(`/?action=host&hostId=test`)
             .expect((res) => {
                 const config: HostConfiguration = JSON.parse(res.text);
                 const tokenPayload: HostTokenPayload = decodeToken(config.hostToken) as HostTokenPayload;
@@ -59,7 +58,7 @@ describe("POST /?action=host&hostId=test", () => {
         const hostToken = signToken(hostTokenPayload);
         const stream = new EventSource(`${base}/?token=${hostToken}`);
         stream.onopen = () => {
-            request(server).post(`/?action=host&hostId=test&appKey=${appKey}`)
+            request(server).post(`/?action=host&hostId=test`)
                 .expect(400, (result) => {
                     stream.close();
                     done(result);
