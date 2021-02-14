@@ -22,7 +22,7 @@ enum ActionTypes { HOST = 'host', JOIN = 'join' }
 const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
 
 if (isPublicRelay) {
-    console.warn('Running in Public Relay mode. Please connect as host (without specifying hostId) to the Internet-accessible URL of this relay and it will be added to the public directory.');
+    console.warn('Running in Public Relay mode. Please connect as host (without specifying hostId) to the Internet-accessible URL of this relay over HTTPS and it will be added to the public directory.');
 }
 
 /**

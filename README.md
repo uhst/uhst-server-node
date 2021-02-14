@@ -33,8 +33,8 @@ By default it listens on all interfaces and port 3000 (http://0.0.0.0:3000). You
 HOST=127.0.0.1 PORT=80 uhst
 ```
 
-__Note: Set UHST_PUBLIC_RELAY=true and the relay will register with the UHST public relays directory the first time it receives a GET request to /.__  
-The relay will be assigned a prefix and all UHST users who use this prefix as part of their hostId will connect to this relay. However, there is no authentication so every UHST relay is currently "open" by default. Thus, UHST_PUBLIC_RELAY flag controls only the advertisement of this relay, even with UHST_PUBLIC_RELAY=false any UHST user can manually connect to this relay.
+__Note: Set UHST_PUBLIC_RELAY=true and the relay will register with the UHST public relays directory the first time it receives a ?action=host POST request without hostId specified.__  
+The relay will be assigned a prefix and all UHST users who use this prefix as part of their hostId will connect to this relay. However, there is no authentication so every UHST relay is currently "open" by default. Thus, UHST_PUBLIC_RELAY flag controls only the advertisement of this relay, even with UHST_PUBLIC_RELAY=false any UHST user can manually connect to this relay. Only HTTPS-accessible relays can be registered in the directory.
 
 ```bash
 UHST_PUBLIC_RELAY=true uhst
