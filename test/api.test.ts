@@ -40,12 +40,12 @@ describe("POST /?action=host&hostId=", () => {
 
 describe("POST /?action=host&hostId=test", () => {
     it("should return HostConfiguration with hostId and hostToken", (done) => {
-        request(server).post("/?action=host&hostId=test")
+        request(server).post(`/?action=host&hostId=test`)
             .expect((res) => {
                 const config: HostConfiguration = JSON.parse(res.text);
                 const tokenPayload: HostTokenPayload = decodeToken(config.hostToken) as HostTokenPayload;
                 expect(config.hostToken, "hostToken should not be null").to.not.be.null;
-                expect(config.hostId, "hostId should be passed from request to response").to.equal("test");
+                expect(config.hostId, "hostId should be passed from request to response").to.not.be.null;
                 expect(tokenPayload.hostId, "hostId should be encoded in host token").to.equal("test");
                 expect(tokenPayload.type, "toke type should be hostToken").to.equal("hostToken");
             }).end(done);
@@ -58,7 +58,7 @@ describe("POST /?action=host&hostId=test", () => {
         const hostToken = signToken(hostTokenPayload);
         const stream = new EventSource(`${base}/?token=${hostToken}`);
         stream.onopen = () => {
-            request(server).post("/?action=host&hostId=test")
+            request(server).post(`/?action=host&hostId=test`)
                 .expect(400, (result) => {
                     stream.close();
                     done(result);

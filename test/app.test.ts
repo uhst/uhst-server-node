@@ -2,7 +2,6 @@ import request = require("supertest");
 import { assert } from "chai";
 import app from "../src/app";
 import { HostConfiguration } from "../src/models/HostConfiguration";
-import { ClientConfiguration } from "../src/models/ClientConfiguration";
 
 // disable 401 error stacktrace logging as it is
 // expected due to missing credentials test
