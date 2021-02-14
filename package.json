@@ -44,6 +44,7 @@
     "express-jwt": "^6.0.0",
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.6.1",
+    "randomatic": "^3.1.1",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
@@ -56,6 +57,7 @@
     "@types/mocha": "^8.0.3",
     "@types/node-fetch": "^2.5.8",
     "@types/pubsub-js": "^1.8.0",
+    "@types/randomatic": "^3.1.0",
     "@types/supertest": "^2.0.10",
     "@types/uuid": "^8.3.0",
     "chai": "^4.2.0",

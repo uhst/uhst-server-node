@@ -22,9 +22,7 @@ enum ActionTypes { HOST = 'host', JOIN = 'join' }
 const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
 
 if (isPublicRelay) {
-    console.warn('Running in Public Relay mode! The next successful \
-    client connection with appKey will register this host in the public relay directory. \
-    To disable this behavior set environment variable UHST_PRIVATE_RELAY=true and restart.');
+    console.warn('Running in Public Relay mode. Please connect as host (without specifying hostId) to the Internet-accessible URL of this relay and it will be added to the public directory.');
 }
 
 /**

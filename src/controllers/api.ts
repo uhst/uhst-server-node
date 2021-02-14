@@ -3,6 +3,7 @@ import { Response, Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ISseResponse } from '@toverux/expresse';
 import fetch from 'node-fetch';
+import randomize = require('randomatic');
 
 import { signToken } from './auth';
 import { HostConfiguration } from '../models/HostConfiguration';
@@ -18,7 +19,7 @@ interface SenderFunction {
 
 const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
 const hosts: Map<String, Map<String, SenderFunction>> = new Map();
-let publicHostIdPrefix : string;
+let publicHostIdPrefix: string = '';
 
 /**
  * Initialize host configuration. If hostId is provided it will
@@ -34,7 +35,7 @@ let publicHostIdPrefix : string;
 export const initHost = async (req: Request, res: Response) => {
     let hostId = req.query.hostId as string;
     if (!hostId) {
-        hostId =  await getHostId();
+        hostId = await getHostId(req);
     }
     if (isHostConnected(hostId)) {
         res.sendStatus(400);
@@ -145,12 +146,34 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
     }
 };
 
-const getHostId = async () => {
+const getHostId = async (req: Request) => {
     if (isPublicRelay) {
-        // return `${publicHostIdPrefix}-${uuidv4()}`;
-        return `${uuidv4()}`;
+        if (!publicHostIdPrefix) {
+            try {
+                const url = req.protocol + '://' + req.get('host') + req.path;
+                console.log(`Getting prefix for ${url}`);
+                const res = await fetch('https://api.uhst.io/v1/relays', {
+                    method: 'post',
+                    body: JSON.stringify({ url }),
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const json = await res.json();
+                publicHostIdPrefix = json.prefix;
+            } catch (err) {
+                console.error(`Failed obtaining public prefix. Please ensure you are conneting to the Internet-accessible URL of this relay.`)
+            }
+        }
+        let hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
+        while (isHostConnected(hostId)) {
+            hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
+        }
+        return hostId;
     } else {
-        return uuidv4();
+        let hostId = randomize('0', 6);
+        while (isHostConnected(hostId)) {
+            hostId = randomize('0', 6);
+        }
+        return hostId;
     }
 }
 
