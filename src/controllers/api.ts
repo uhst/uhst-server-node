@@ -163,9 +163,9 @@ const getHostId = async (req: Request) => {
                 console.error(`Failed obtaining public prefix. Please ensure you are conneting over HTTPS to the Internet-accessible URL of this relay.`)
             }
         }
-        let hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
+        let hostId = `${publicHostIdPrefix}${randomize('0', 4)}`;
         while (isHostConnected(hostId)) {
-            hostId = `${publicHostIdPrefix}${randomize('0', 6)}`;
+            hostId = `${publicHostIdPrefix}${randomize('0', 4)}`;
         }
         return hostId;
     } else {

@@ -16,7 +16,7 @@
     "test": "npm run clean && npm run build && mocha dist/test/**/*.test.js --exit",
     "test-watch": "npm run clean && tsc-watch --onSuccess \"mocha dist/test/**/*.test.js\"",
     "lint": "tslint -t verbose \"src/**/*.ts\" \"test/**/*.ts\"",
-    "dist": "npm test && copyfiles bin/* package.json README.md LICENSE dist",
+    "dist": "npm test && copyfiles bin/* package.json README.md LICENSE dist && typedoc",
     "semantic-release": "semantic-release"
   },
   "repository": {
@@ -69,6 +69,7 @@
     "supertest": "^4.0.2",
     "ts-node": "^9.1.1",
     "tsc-watch": "^4.2.9",
+    "typedoc": "^0.20.25",
     "typescript": "^3.9.7"
   },
   "engines": {
