@@ -17,5 +17,9 @@
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "typedocOptions": {
+    "entryPoints": ["src/server.ts"],
+    "out": "docs"
+  }
 }
