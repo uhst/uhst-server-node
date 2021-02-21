@@ -3,16 +3,6 @@ import { assert } from "chai";
 import app from "../src/app";
 import { HostConfiguration } from "../src/models/HostConfiguration";
 
-// disable 401 error stacktrace logging as it is
-// expected due to missing credentials test
-app.use(function (err: any, req: any, res: any, next: any) {
-    if (err && err.status == 401) {
-        res.sendStatus(401);
-    } else {
-        next(err);
-    }
-});
-
 describe("GET /random-url", () => {
     it("should return 404", (done) => {
         request(app).get("/reset")
