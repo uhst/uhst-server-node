@@ -19,7 +19,7 @@
     "dist"
   ],
   "typedocOptions": {
-    "entryPoints": ["src/server.ts"],
+    "entryPoints": ["src/index.ts"],
     "out": "docs"
   }
 }

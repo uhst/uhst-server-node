@@ -2,6 +2,7 @@
 import express = require('express');
 import cors = require('cors');
 import { sse } from '@toverux/expresse';
+const { version } = require('../../package.json');
 
 // Controllers (route handlers)
 import * as apiController from './controllers/api';
@@ -14,16 +15,12 @@ const protect = authController.protect();
 // Express configuration
 app.set('port', process.env.PORT || 3000);
 app.set('host', process.env.HOST || '0.0.0.0');
+app.set('version', version);
+app.set('public', process.env.UHST_PUBLIC_RELAY);
 app.use(cors());
 app.use(express.json());
 
 enum ActionTypes { HOST = 'host', JOIN = 'join' }
-
-const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
-
-if (isPublicRelay) {
-    console.warn('Running in Public Relay mode. Please connect as host (without specifying hostId) to the Internet-accessible URL of this relay over HTTPS and it will be added to the public directory.');
-}
 
 /**
  * Primary app routes.
@@ -31,7 +28,15 @@ if (isPublicRelay) {
 app.post('/', (req, res, next) => { ActionTypes.HOST == req.query.action ? next() : next('route') }, apiController.initHost);
 app.post('/', (req, res, next) => { ActionTypes.JOIN == req.query.action ? next() : next('route') }, apiController.initClient);
 app.post('/', protect, apiController.sendMessage);
+// flushHeaders should be false to allow rejecting the connection after inspecting request (status 400)
 app.get('/', protect, sse(/* options */ { flushHeaders: false }), apiController.listen);
-// flushHeaders should be false to allow rejecting the connection after inspecting request (status 400) 
+// disable 401 error stacktrace logging as it is expected due to missing credentials
+app.use(function (err: any, req: any, res: any, next: any) {
+    if (err && err.status == 401) {
+        res.sendStatus(401);
+    } else {
+        next(err);
+    }
+});
 
 export default app;
