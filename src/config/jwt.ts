@@ -2,6 +2,6 @@
 import crypto = require('crypto');
 
 export const config = {
-    secret: crypto.randomBytes(64).toString('hex'),
+    secret: process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex'),
     algorithms: ['HS256']
 }

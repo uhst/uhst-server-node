@@ -53,7 +53,8 @@ describe("POST /?action=host&hostId=test", () => {
     it("should return 400 because the hostId is already in use", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "test"
+            hostId: "test",
+            gaClientId: "test"
         }
         const hostToken = signToken(hostTokenPayload);
         const stream = new EventSource(`${base}/?token=${hostToken}`);
@@ -85,7 +86,8 @@ describe("POST /?action=join&hostId=test", () => {
     it("should return ClientConfiguration with clientToken", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "test"
+            hostId: "test",
+            gaClientId: "test"
         }
         const hostToken = signToken(hostTokenPayload);
         const stream = new EventSource(`${base}/?token=${hostToken}`);
@@ -111,7 +113,8 @@ describe("GET /?token=host", () => {
     it("should return OK", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostGet"
+            hostId: "testHostGet",
+            gaClientId: "test"
         }
         const hostToken = signToken(hostTokenPayload);
 
@@ -133,7 +136,8 @@ describe("GET /?token=client", () => {
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testClientGetHostId",
-            clientId: "testClientGetClientId"
+            clientId: "testClientGetClientId",
+            gaClientId: "test"
         }
         const clientToken = signToken(clientTokenPayload);
 
@@ -146,7 +150,8 @@ describe("POST /?token=host", () => {
     it("should return 400 because no client is listening", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostPost"
+            hostId: "testHostPost",
+            gaClientId: "test"
         }
         const hostToken = signToken(hostTokenPayload);
 
@@ -160,7 +165,8 @@ describe("POST /?token=client", () => {
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testClientGetHostId",
-            clientId: "testClientGetClientId"
+            clientId: "testClientGetClientId",
+            gaClientId: "test"
         }
         const clientToken = signToken(clientTokenPayload);
 
@@ -188,12 +194,14 @@ describe("Exchange Messages", () => {
     it("should forward client message to host", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostReceiveMessage"
+            hostId: "testHostReceiveMessage",
+            gaClientId: "test"
         }
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testHostReceiveMessage",
-            clientId: "testClientSendMessageClientId"
+            clientId: "testClientSendMessageClientId",
+            gaClientId: "test"
         }
         const testMessageFromClient = { test: "client" }
         const clientToken = signToken(clientTokenPayload);
@@ -228,12 +236,14 @@ describe("Exchange Messages", () => {
     it("should forward host message to client", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostReceiveMessage"
+            hostId: "testHostReceiveMessage",
+            gaClientId: "test"
         }
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testHostReceiveMessage",
-            clientId: "testClientSendMessageClientId"
+            clientId: "testClientSendMessageClientId",
+            gaClientId: "test"
         }
         const responseTokenPayload: ResponseTokenPayload = {
             type: TokenType.RESPONSE,
@@ -284,12 +294,14 @@ describe("Exchange Messages", () => {
     it("should broadcast host message to client", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostReceiveMessage"
+            hostId: "testHostReceiveMessage",
+            gaClientId: "test"
         }
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testHostReceiveMessage",
-            clientId: "testClientSendMessageClientId"
+            clientId: "testClientSendMessageClientId",
+            gaClientId: "test"
         }
         const testMessageFromHost = { test: "host" }
         const clientToken = signToken(clientTokenPayload);
@@ -334,7 +346,8 @@ describe("Exchange Messages", () => {
     it("should NOT broadcast host message to host", (done) => {
         const hostTokenPayload: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: "testHostBroadcastMessage"
+            hostId: "testHostBroadcastMessage",
+            gaClientId: "test"
         }
         const testMessageFromHost = { test: "host" }
         const hostToken = signToken(hostTokenPayload);
@@ -378,7 +391,8 @@ describe("Exchange Messages", () => {
         const clientTokenPayload: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: "testHostReceiveMessage",
-            clientId: "testClientSendMessageClientId"
+            clientId: "testClientSendMessageClientId",
+            gaClientId: "test"
         }
         const clientToken = signToken(clientTokenPayload);
 
