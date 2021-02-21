@@ -28,7 +28,15 @@ enum ActionTypes { HOST = 'host', JOIN = 'join' }
 app.post('/', (req, res, next) => { ActionTypes.HOST == req.query.action ? next() : next('route') }, apiController.initHost);
 app.post('/', (req, res, next) => { ActionTypes.JOIN == req.query.action ? next() : next('route') }, apiController.initClient);
 app.post('/', protect, apiController.sendMessage);
+// flushHeaders should be false to allow rejecting the connection after inspecting request (status 400)
 app.get('/', protect, sse(/* options */ { flushHeaders: false }), apiController.listen);
-// flushHeaders should be false to allow rejecting the connection after inspecting request (status 400) 
+// disable 401 error stacktrace logging as it is expected due to missing credentials
+app.use(function (err: any, req: any, res: any, next: any) {
+    if (err && err.status == 401) {
+        res.sendStatus(401);
+    } else {
+        next(err);
+    }
+});
 
 export default app;
