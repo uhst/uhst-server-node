@@ -2,7 +2,12 @@
 import express = require('express');
 import cors = require('cors');
 import { sse } from '@toverux/expresse';
-const { version } = require('../../package.json');
+let version = '';
+try {
+    version = require('../package.json').version; // prod
+} catch (e) {
+    version = require('../../package.json').version; // dev
+}
 
 // Controllers (route handlers)
 import * as apiController from './controllers/api';
