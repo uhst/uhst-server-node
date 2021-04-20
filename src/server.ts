@@ -1,4 +1,7 @@
 'use strict';
+if (process.env.NEW_RELIC_LICENSE_KEY) {
+    require('newrelic');
+}
 import app from './app';
 
 /**

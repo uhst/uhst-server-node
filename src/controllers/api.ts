@@ -12,7 +12,6 @@ import { TokenPayload, TokenType, HostTokenPayload, ClientTokenPayload, Response
 import { RequestWithUser } from '../models/RequestWithUser';
 import { Message } from '../models/Message';
 import { HostMessage } from '../models/HostMessage';
-import { logEvent, newGaClientId, AnalyticsEvent, AnalyticsParam, AnalyticsErrorReason, AnalyticsMessageType, AnalyticsSubscriberType} from '../analytics';
 
 interface SenderFunction {
     (message: Message): void;
@@ -34,30 +33,21 @@ let publicHostIdPrefix: string = '';
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
 export const initHost = async (req: Request, res: Response) => {
-    const gaClientId = newGaClientId();
     let hostId = req.query.hostId as string;
     if (!hostId) {
         hostId = await getHostId(req);
     }
     if (isHostConnected(hostId)) {
-        logEvent(AnalyticsEvent.ERROR, gaClientId, {
-            [AnalyticsParam.ERROR_REASON]: AnalyticsErrorReason.HOST_ALREADY_CONNECTED,
-            [AnalyticsParam.HOST_ID]: hostId
-        });
         res.sendStatus(400);
     } else {
         const hostToken: HostTokenPayload = {
             type: TokenType.HOST,
-            hostId: hostId,
-            gaClientId: gaClientId
+            hostId: hostId
         }
         const config: HostConfiguration = {
             hostId: hostId,
             hostToken: signToken(hostToken)
         }
-        logEvent(AnalyticsEvent.INIT_HOST, gaClientId, {
-            [AnalyticsParam.HOST_ID]: hostToken.hostId
-        });
         res.send(config);
     }
 };
@@ -71,27 +61,18 @@ export const initHost = async (req: Request, res: Response) => {
  * @route POST /?action=join&hostId=<host-id-to-join>
  */
 export const initClient = (req: Request, res: Response) => {
-    const gaClientId = newGaClientId();
     const hostId = req.query.hostId as string;
     if (!isHostConnected(hostId)) {
-        logEvent(AnalyticsEvent.ERROR, gaClientId, {
-            [AnalyticsParam.ERROR_REASON]: AnalyticsErrorReason.INVALID_HOST_ID,
-            [AnalyticsParam.HOST_ID]: hostId
-        });
         res.sendStatus(400);
     } else {
         const clientToken: ClientTokenPayload = {
             type: TokenType.CLIENT,
             hostId: hostId,
-            gaClientId: gaClientId,
             clientId: uuidv4()
         }
         const config: ClientConfiguration = {
             clientToken: signToken(clientToken)
         }
-        logEvent(AnalyticsEvent.INIT_CLIENT, gaClientId, {
-            [AnalyticsParam.HOST_ID]: clientToken.hostId
-        });
         res.send(config);
     }
 };
@@ -145,16 +126,9 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
             if (!clientConnections.has(hostToken.hostId)) {
                 addClient(req, res, hostToken.hostId, hostToken.hostId, clientConnections);
                 hosts.set(hostToken.hostId, clientConnections);
-                logEvent(AnalyticsEvent.SUBSCRIBE, hostToken.gaClientId, {
-                    [AnalyticsParam.HOST_ID]: hostToken.hostId,
-                    [AnalyticsParam.SUBSCRIBER_TYPE]: AnalyticsSubscriberType.HOST
-                });
+                res.sse.comment('Connected.');
             } else {
                 // host is already connected
-                logEvent(AnalyticsEvent.ERROR, hostToken.gaClientId, {
-                    [AnalyticsParam.HOST_ID]: hostToken.hostId,
-                    [AnalyticsParam.ERROR_REASON]: AnalyticsErrorReason.HOST_ALREADY_CONNECTED
-                });
                 res.sendStatus(400);
             }
             break;
@@ -163,16 +137,9 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
             const connections = hosts.get(clientToken.hostId);
             if (connections && !connections.has(clientToken.clientId)) {
                 addClient(req, res, clientToken.clientId, clientToken.hostId, connections);
-                logEvent(AnalyticsEvent.SUBSCRIBE, clientToken.gaClientId, {
-                    [AnalyticsParam.HOST_ID]: clientToken.hostId,
-                    [AnalyticsParam.SUBSCRIBER_TYPE]: AnalyticsSubscriberType.CLIENT
-                });
+                res.sse.comment('Connected.');
             } else {
                 // either host or client doesn't exist
-                logEvent(AnalyticsEvent.ERROR, clientToken.gaClientId, {
-                    [AnalyticsParam.HOST_ID]: clientToken.hostId,
-                    [AnalyticsParam.ERROR_REASON]: AnalyticsErrorReason.INVALID_HOST_ID
-                });
                 res.sendStatus(400);
             }
             break;
@@ -251,16 +218,8 @@ const sendMessageToHost = (req: RequestWithUser, res: Response, clientToken: Cli
             body: req.body
         };
         sendToHost(message);
-        logEvent(AnalyticsEvent.SEND_MESSAGE, clientToken.gaClientId, {
-            [AnalyticsParam.HOST_ID]: clientToken.hostId,
-            [AnalyticsParam.MESSAGE_TYPE]: AnalyticsMessageType.CLIENT_TO_HOST
-        });
         res.sendStatus(200);
     } else {
-        logEvent(AnalyticsEvent.ERROR, clientToken.gaClientId, {
-            [AnalyticsParam.HOST_ID]: clientToken.hostId,
-            [AnalyticsParam.ERROR_REASON]: AnalyticsErrorReason.INVALID_HOST_ID
-        });
         res.sendStatus(400);
     }
 };
@@ -278,16 +237,8 @@ const broadcastMessage = (req: RequestWithUser, res: Response, hostToken: HostTo
             }
         }
         let result = broadcastToClients(clients, clientIds, message)
-        logEvent(AnalyticsEvent.SEND_MESSAGE, hostToken.gaClientId, {
-            [AnalyticsParam.HOST_ID]: hostToken.hostId,
-            [AnalyticsParam.MESSAGE_TYPE]: AnalyticsMessageType.BROADCAST
-        });
         res.json(result);
     } else {
-        logEvent(AnalyticsEvent.ERROR, hostToken.gaClientId, {
-            [AnalyticsParam.HOST_ID]: hostToken.hostId,
-            [AnalyticsParam.ERROR_REASON]: AnalyticsErrorReason.INVALID_SUBSCRIBER
-        });
         res.sendStatus(400);
     }
 }
