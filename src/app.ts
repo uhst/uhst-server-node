@@ -12,6 +12,7 @@ try {
 // Controllers (route handlers)
 import * as apiController from './controllers/api';
 import * as authController from './controllers/auth';
+import * as pingController from './controllers/ping';
 
 const app = express();
 
@@ -33,6 +34,7 @@ enum ActionTypes { HOST = 'host', JOIN = 'join' }
 app.post('/', (req, res, next) => { ActionTypes.HOST == req.query.action ? next() : next('route') }, apiController.initHost);
 app.post('/', (req, res, next) => { ActionTypes.JOIN == req.query.action ? next() : next('route') }, apiController.initClient);
 app.post('/', protect, apiController.sendMessage);
+app.get('/ping', pingController.ping);
 // flushHeaders should be false to allow rejecting the connection after inspecting request (status 400)
 app.get('/', protect, sse(/* options */ { flushHeaders: false }), apiController.listen);
 // disable 401 error stacktrace logging as it is expected due to missing credentials
