@@ -43,11 +43,8 @@ The relay will be assigned a prefix and all UHST users who use this prefix as pa
 UHST_PUBLIC_RELAY=true uhst
 ```
 
-**Analytics:**
+**NewRelic:**
 
-UHST Relay supports Google Analytics 4 Measurement Protocol. The goal is to keep track of how the relay is used and plan for scaling / adding new instances. Read more about GA4 Measurement Protocol [here](https://developers.google.com/analytics/devguides/collection/protocol/ga4/sending-events?client_type=gtag#required_parameters). To enable analytics, set the following environment variables:  
+UHST Relay supports NewRelic. The goal is to monitor how the relay is used and plan for scaling / adding new instances. To enable NewRelic, set the following environment variable:  
 
-`GA_API_SECRET=` An API SECRET generated in the Google Analytics UI.  
-`GA_MEASUREMENT_ID=` The measurement ID associated with a stream. Found in the Google Analytics UI.  
-
-The relay will generate a `ga_client_id` for every connection it receives and will store it in the JWT tokens (as `gaClientId`). This identifier is used for tracking subsequent requests by the same client/host.
+`NEW_RELIC_LICENSE_KEY=` Your New Relic license key. For example, license_key: '40HexadecimalCharacters'.
