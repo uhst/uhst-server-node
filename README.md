@@ -28,16 +28,16 @@ You can start the Express.js server with:
 ./uhst
 ```
 
-By default it listens on all interfaces and port 3000 (http://0.0.0.0:3000). You can specify host and port by setting the environment variables `host` and `port`:
+By default it listens on 127.0.0.1 and port 3000 (http://127.0.0.1:3000). You can specify host and port by setting the environment variables `HOST` and `PORT`:
 
 ```bash
-HOST=127.0.0.1 PORT=80 uhst
+HOST=0.0.0.0 PORT=80 uhst
 ```
 
 Set the environment variable `JWT_SECRET` to specify a HS256 secret to use for signing the tokens. This is useful for example when restarting the relay if you want to ensure existing tokens are still valid. If this variable is not set a random secret will be generated at runtime.
 
-__Note: Set UHST_PUBLIC_RELAY=true and the relay will register with the UHST public relays directory the first time it receives a ?action=host POST request without hostId specified.__  
-The relay will be assigned a prefix and all UHST users who use this prefix as part of their hostId will connect to this relay. However, there is no authentication so every UHST relay is currently "open" by default. Thus, UHST_PUBLIC_RELAY flag controls only the advertisement of this relay, even with UHST_PUBLIC_RELAY=false any UHST user can manually connect to this relay. Only HTTPS-accessible relays can be registered in the directory.
+__Note: Set UHST_PUBLIC_RELAY=true and the relay will retrieve its prefix from the public relays directory (https://github.com/uhst/relays/blob/main/list.json) the first time it receives ?action=host or ?action=ping POST request.__  
+The relay has to be listed in the directory with its unique prefix. All UHST users who use this prefix as part of their hostId will connect to this relay. However, there is no authentication so every UHST relay is currently "open" by default. Thus, UHST_PUBLIC_RELAY flag controls only the advertisement of this relay, even with UHST_PUBLIC_RELAY=false any UHST user can manually connect to this relay. Only HTTPS-accessible relays can be registered in the directory.
 
 ```bash
 UHST_PUBLIC_RELAY=true uhst
