@@ -203,8 +203,9 @@ const getPublicHostIdPrefix = async (req: Request) => {
     const relays: PublicRelay[] = await res.json();
     publicHostIdPrefix = findPrefixByUrl(relays, url);
   } catch (err) {
+    console.error(err);
     console.error(
-      `Failed obtaining public prefix. Please ensure the relay can access the Internet and ${url} exists in the UHST relays list file on GitHub.`
+      `Failed obtaining public prefix. Please ensure the relay can access the Internet and ${url} exists in the UHST relays list file: ${relaysListUrl}.`
     );
   }
 };
