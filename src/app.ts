@@ -1,5 +1,5 @@
 'use strict';
-import express = require('express');
+import * as express from "express";
 import cors = require('cors');
 import { sse } from '@toverux/expresse';
 let version = '';
