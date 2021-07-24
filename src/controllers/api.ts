@@ -8,18 +8,41 @@ import randomize = require('randomatic');
 import { signToken } from './auth';
 import { HostConfiguration } from '../models/HostConfiguration';
 import { ClientConfiguration } from '../models/ClientConfiguration';
-import { TokenPayload, TokenType, HostTokenPayload, ClientTokenPayload, ResponseTokenPayload } from '../models/TokenPayload';
+import {
+  TokenPayload,
+  TokenType,
+  HostTokenPayload,
+  ClientTokenPayload,
+  ResponseTokenPayload,
+} from '../models/TokenPayload';
 import { RequestWithUser } from '../models/RequestWithUser';
 import { Message } from '../models/Message';
 import { HostMessage } from '../models/HostMessage';
+import { PublicRelay } from '../models/PublicRelay';
 
 interface SenderFunction {
-    (message: Message): void;
+  (message: Message): void;
 }
 
 const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
+const relaysListUrl =
+  process.env.UHST_RELAYS_LIST ||
+  'https://raw.githubusercontent.com/uhst/relays/main/list.json';
 const hosts: Map<String, Map<String, SenderFunction>> = new Map();
 let publicHostIdPrefix: string = '';
+
+/**
+ * Sends back the timestamp from the request
+ * @route POST /?action=ping[&timestamp=<optional-timestamp-to-send-back>]
+ */
+export const ping = async (req: Request, res: Response) => {
+  if (isPublicRelay && !publicHostIdPrefix) {
+    await getPublicHostIdPrefix(req);
+  }
+  res.send({
+    pong: req.query.timestamp ? parseInt(req.query.timestamp as string) : null,
+  });
+};
 
 /**
  * Initialize host configuration. If hostId is provided it will
@@ -29,27 +52,30 @@ let publicHostIdPrefix: string = '';
  * be used for broadcasting a message to all clients.
  * If the hostId is an active connection with the same hostId
  * then this endpoint returns error 400.
- * 
+ *
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
 export const initHost = async (req: Request, res: Response) => {
-    let hostId = req.query.hostId as string;
-    if (!hostId) {
-        hostId = await getHostId(req);
-    }
-    if (isHostConnected(hostId)) {
-        res.sendStatus(400);
-    } else {
-        const hostToken: HostTokenPayload = {
-            type: TokenType.HOST,
-            hostId: hostId
-        }
-        const config: HostConfiguration = {
-            hostId: hostId,
-            hostToken: signToken(hostToken)
-        }
-        res.send(config);
-    }
+  if (isPublicRelay && !publicHostIdPrefix) {
+    await getPublicHostIdPrefix(req);
+  }
+  let hostId = req.query.hostId as string;
+  if (!hostId) {
+    hostId = await getHostId(req);
+  }
+  if (isHostConnected(hostId)) {
+    res.sendStatus(400);
+  } else {
+    const hostToken: HostTokenPayload = {
+      type: TokenType.HOST,
+      hostId: hostId,
+    };
+    const config: HostConfiguration = {
+      hostId: hostId,
+      hostToken: signToken(hostToken),
+    };
+    res.send(config);
+  }
 };
 
 /**
@@ -61,20 +87,20 @@ export const initHost = async (req: Request, res: Response) => {
  * @route POST /?action=join&hostId=<host-id-to-join>
  */
 export const initClient = (req: Request, res: Response) => {
-    const hostId = req.query.hostId as string;
-    if (!isHostConnected(hostId)) {
-        res.sendStatus(400);
-    } else {
-        const clientToken: ClientTokenPayload = {
-            type: TokenType.CLIENT,
-            hostId: hostId,
-            clientId: uuidv4()
-        }
-        const config: ClientConfiguration = {
-            clientToken: signToken(clientToken)
-        }
-        res.send(config);
-    }
+  const hostId = req.query.hostId as string;
+  if (!isHostConnected(hostId)) {
+    res.sendStatus(400);
+  } else {
+    const clientToken: ClientTokenPayload = {
+      type: TokenType.CLIENT,
+      hostId: hostId,
+      clientId: uuidv4(),
+    };
+    const config: ClientConfiguration = {
+      clientToken: signToken(clientToken),
+    };
+    res.send(config);
+  }
 };
 
 /**
@@ -85,27 +111,27 @@ export const initClient = (req: Request, res: Response) => {
  * the message to all clients.
  * If the receiving party is not listening for messages this
  * endpoint will return error 400.
- * 
+ *
  * @route POST /?token=<clientToken|responseToken|hostToken>
  */
 export const sendMessage = (req: RequestWithUser, res: Response) => {
-    const token: TokenPayload = req.user as TokenPayload;
-    switch (token.type) {
-        case TokenType.RESPONSE:
-            // message from host to client
-            sendMessageToClient(req, res, token as ResponseTokenPayload);
-            break;
-        case TokenType.CLIENT:
-            // message from client to host
-            sendMessageToHost(req, res, token as ClientTokenPayload);
-            break;
-        case TokenType.HOST:
-            // broadcast to all clients
-            broadcastMessage(req, res, token as HostTokenPayload);
-            break;
-        default:
-            res.sendStatus(400);
-    }
+  const token: TokenPayload = req.user as TokenPayload;
+  switch (token.type) {
+    case TokenType.RESPONSE:
+      // message from host to client
+      sendMessageToClient(req, res, token as ResponseTokenPayload);
+      break;
+    case TokenType.CLIENT:
+      // message from client to host
+      sendMessageToHost(req, res, token as ClientTokenPayload);
+      break;
+    case TokenType.HOST:
+      // broadcast to all clients
+      broadcastMessage(req, res, token as HostTokenPayload);
+      break;
+    default:
+      res.sendStatus(400);
+  }
 };
 
 /**
@@ -113,160 +139,195 @@ export const sendMessage = (req: RequestWithUser, res: Response) => {
  * on token type. Other types of token (i.e. responseToken)
  * are not acceptable for this endpoint and will return
  * error 400.
- * 
+ *
  * @route GET /?token=<clientToken|hostToken>
  */
 export const listen = (req: RequestWithUser, res: ISseResponse) => {
-    const token: TokenPayload = req.user as TokenPayload;
+  const token: TokenPayload = req.user as TokenPayload;
 
-    switch (token.type) {
-        case TokenType.HOST:
-            const hostToken: HostTokenPayload = token as HostTokenPayload;
-            const clientConnections = hosts.get(hostToken.hostId) ?? new Map<string, SenderFunction>();
-            if (!clientConnections.has(hostToken.hostId)) {
-                addClient(req, res, hostToken.hostId, hostToken.hostId, clientConnections);
-                hosts.set(hostToken.hostId, clientConnections);
-                res.sse.comment('Connected.');
-            } else {
-                // host is already connected
-                res.sendStatus(400);
-            }
-            break;
-        case TokenType.CLIENT:
-            const clientToken: ClientTokenPayload = token as ClientTokenPayload;
-            const connections = hosts.get(clientToken.hostId);
-            if (connections && !connections.has(clientToken.clientId)) {
-                addClient(req, res, clientToken.clientId, clientToken.hostId, connections);
-                res.sse.comment('Connected.');
-            } else {
-                // either host or client doesn't exist
-                res.sendStatus(400);
-            }
-            break;
-        default:
-            res.sendStatus(400);
-    }
+  switch (token.type) {
+    case TokenType.HOST:
+      const hostToken: HostTokenPayload = token as HostTokenPayload;
+      const clientConnections =
+        hosts.get(hostToken.hostId) ?? new Map<string, SenderFunction>();
+      if (!clientConnections.has(hostToken.hostId)) {
+        addClient(
+          req,
+          res,
+          hostToken.hostId,
+          hostToken.hostId,
+          clientConnections
+        );
+        hosts.set(hostToken.hostId, clientConnections);
+        res.sse.comment('Connected.');
+      } else {
+        // host is already connected
+        res.sendStatus(400);
+      }
+      break;
+    case TokenType.CLIENT:
+      const clientToken: ClientTokenPayload = token as ClientTokenPayload;
+      const connections = hosts.get(clientToken.hostId);
+      if (connections && !connections.has(clientToken.clientId)) {
+        addClient(
+          req,
+          res,
+          clientToken.clientId,
+          clientToken.hostId,
+          connections
+        );
+        res.sse.comment('Connected.');
+      } else {
+        // either host or client doesn't exist
+        res.sendStatus(400);
+      }
+      break;
+    default:
+      res.sendStatus(400);
+  }
 };
 
 const getHostId = async (req: Request) => {
-    if (isPublicRelay) {
-        if (!publicHostIdPrefix) {
-            try {
-                const url = 'https://' + req.get('host') + req.path;
-                console.log(`Getting prefix for ${url}`);
-                const res = await fetch('https://api.uhst.io/v1/relays', {
-                    method: 'post',
-                    body: JSON.stringify({ url }),
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                const json = await res.json();
-                publicHostIdPrefix = json.prefix;
-            } catch (err) {
-                console.error(`Failed obtaining public prefix. Please ensure you are conneting over HTTPS to the Internet-accessible URL of this relay.`)
-            }
-        }
-        let hostId = `${publicHostIdPrefix}${randomize('0', 4)}`;
-        while (isHostConnected(hostId)) {
-            hostId = `${publicHostIdPrefix}${randomize('0', 4)}`;
-        }
-        return hostId;
-    } else {
-        let hostId = randomize('0', 6);
-        while (isHostConnected(hostId)) {
-            hostId = randomize('0', 6);
-        }
-        return hostId;
-    }
-}
-
-const broadcastToClients = (clients: Map<String, SenderFunction>, clientIds: string[], message: Message): Map<string, boolean> => {
-    let result = new Map<string, boolean>();
-    for (let clientId of clientIds) {
-        const sendToClient = clients.get(clientId);
-        if (sendToClient) {
-            sendToClient(message);
-            result.set(clientId, true);
-        }
-
-    }
-    return result;
+  let hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay ? 4 : 6)}`;
+  while (isHostConnected(hostId)) {
+    hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay ? 4 : 6)}`;
+  }
+  return hostId;
 };
 
+const getPublicHostIdPrefix = async (req: Request) => {
+  const url = 'https://' + req.get('host') + req.path;
+  console.log(`Getting prefix for ${url}`);
+  try {
+    const res = await fetch(relaysListUrl);
+    const relays: PublicRelay[] = await res.json();
+    publicHostIdPrefix = findPrefixByUrl(relays, url);
+  } catch (err) {
+    console.error(
+      `Failed obtaining public prefix. Please ensure the relay can access the Internet and ${url} exists in the UHST relays list file on GitHub.`
+    );
+  }
+};
 
-const sendMessageToClient = (req: RequestWithUser, res: Response, responseToken: ResponseTokenPayload) => {
-    const sendToClient = hosts.get(responseToken.hostId)?.get(responseToken.clientId);
+const findPrefixByUrl = (relays: PublicRelay[], url: string): string => {
+  for (const relay of relays) {
+    if (relay.urls.includes(url)) {
+      return `${relay.prefix}-`;
+    }
+  }
+  throw new Error(`Unable to find ${url} in public relays list.`);
+};
+
+const broadcastToClients = (
+  clients: Map<String, SenderFunction>,
+  clientIds: string[],
+  message: Message
+): Map<string, boolean> => {
+  let result = new Map<string, boolean>();
+  for (let clientId of clientIds) {
+    const sendToClient = clients.get(clientId);
     if (sendToClient) {
-        sendToClient({
-            body: req.body
-        });
-        res.sendStatus(200);
-    } else {
-        res.sendStatus(400);
+      sendToClient(message);
+      result.set(clientId, true);
     }
+  }
+  return result;
 };
 
-const sendMessageToHost = (req: RequestWithUser, res: Response, clientToken: ClientTokenPayload) => {
-    const sendToHost = hosts.get(clientToken.hostId)?.get(clientToken.hostId);
-    if (sendToHost) {
-        const hostResponseToken: ResponseTokenPayload = {
-            type: TokenType.RESPONSE,
-            hostId: clientToken.hostId,
-            clientId: clientToken.clientId
-        };
-        const message: HostMessage = {
-            responseToken: signToken(hostResponseToken),
-            body: req.body
-        };
-        sendToHost(message);
-        res.sendStatus(200);
-    } else {
-        res.sendStatus(400);
-    }
-};
-
-const broadcastMessage = (req: RequestWithUser, res: Response, hostToken: HostTokenPayload) => {
-    const clients = hosts.get(hostToken.hostId);
-    if (clients) {
-        const clientIds = [];
-        const message: Message = {
-            body: req.body
-        }
-        for (let clientId of clients.keys()) {
-            if (clientId !== hostToken.hostId) {
-                clientIds.push(clientId.toString());
-            }
-        }
-        let result = broadcastToClients(clients, clientIds, message)
-        res.json(result);
-    } else {
-        res.sendStatus(400);
-    }
-}
-
-const addClient = (req: RequestWithUser, res: ISseResponse, clientId: string, hostId: string, clientConnections: Map<String, SenderFunction>) => {
-    const disconnect = () => {
-        clientConnections.delete(clientId);
-        if (hosts.get(hostId)?.size === 0) {
-            // last client has left, remove host
-            hosts.delete(hostId);
-        }
-    }
-    clientConnections.set(clientId, (message: Message) => {
-        res.sse.data(message);
+const sendMessageToClient = (
+  req: RequestWithUser,
+  res: Response,
+  responseToken: ResponseTokenPayload
+) => {
+  const sendToClient = hosts
+    .get(responseToken.hostId)
+    ?.get(responseToken.clientId);
+  if (sendToClient) {
+    sendToClient({
+      body: req.body,
     });
-    req.on('error', disconnect)
-    res.on('error', disconnect)
-    res.on('close', disconnect)
-    res.on('finish', disconnect)
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
+  }
+};
+
+const sendMessageToHost = (
+  req: RequestWithUser,
+  res: Response,
+  clientToken: ClientTokenPayload
+) => {
+  const sendToHost = hosts.get(clientToken.hostId)?.get(clientToken.hostId);
+  if (sendToHost) {
+    const hostResponseToken: ResponseTokenPayload = {
+      type: TokenType.RESPONSE,
+      hostId: clientToken.hostId,
+      clientId: clientToken.clientId,
+    };
+    const message: HostMessage = {
+      responseToken: signToken(hostResponseToken),
+      body: req.body,
+    };
+    sendToHost(message);
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
+  }
+};
+
+const broadcastMessage = (
+  req: RequestWithUser,
+  res: Response,
+  hostToken: HostTokenPayload
+) => {
+  const clients = hosts.get(hostToken.hostId);
+  if (clients) {
+    const clientIds = [];
+    const message: Message = {
+      body: req.body,
+    };
+    for (let clientId of clients.keys()) {
+      if (clientId !== hostToken.hostId) {
+        clientIds.push(clientId.toString());
+      }
+    }
+    let result = broadcastToClients(clients, clientIds, message);
+    res.json(result);
+  } else {
+    res.sendStatus(400);
+  }
+};
+
+const addClient = (
+  req: RequestWithUser,
+  res: ISseResponse,
+  clientId: string,
+  hostId: string,
+  clientConnections: Map<String, SenderFunction>
+) => {
+  const disconnect = () => {
+    clientConnections.delete(clientId);
+    if (hosts.get(hostId)?.size === 0) {
+      // last client has left, remove host
+      hosts.delete(hostId);
+    }
+  };
+  clientConnections.set(clientId, (message: Message) => {
+    res.sse.data(message);
+  });
+  req.on('error', disconnect);
+  res.on('error', disconnect);
+  res.on('close', disconnect);
+  res.on('finish', disconnect);
 };
 
 const isHostConnected = (hostId: string): boolean => {
-    const connections = hosts.get(hostId);
-    let result;
-    if (!connections) {
-        result = false;
-    } else {
-        result = connections.has(hostId);
-    }
-    return result;
+  const connections = hosts.get(hostId);
+  let result;
+  if (!connections) {
+    result = false;
+  } else {
+    result = connections.has(hostId);
+  }
+  return result;
 };
