@@ -1,0 +1,183 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>uhst-server</title>
+	<meta name="description" content="Documentation for uhst-server">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+	<script async src="assets/js/search.js" id="search-script"></script>
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">uhst-server</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<h1>uhst-server</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/StarNetwork.svg" alt="Star Topology" align="right">
+				<a href="#uhst-server-node" id="uhst-server-node" style="color: inherit; text-decoration: none;">
+					<h1>uhst-server-node</h1>
+				</a>
+				<p><a href="https://www.npmjs.com/package/uhst-server"><img src="https://img.shields.io/npm/v/uhst-server.svg?style=flat-square" alt="npm version"></a> <img src="https://img.shields.io/github/license/mitmadness/UnityInvoker.svg?style=flat-square" alt="license"> <a href="https://travis-ci.org/uhst/uhst-server-node"><img src="https://img.shields.io/travis/uhst/uhst-server-node.svg?branch=master&style=flat-square" alt="Travis Build"></a> <img src="https://img.shields.io/npm/dt/uhst-server.svg?style=flat-square" alt="npm total downloads">
+				<a href="https://gitter.im/uhst/community?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge"><img src="https://badges.gitter.im/uhst/community.svg" alt="Gitter"></a></p>
+				<p>User Hosted Secure Transmission server in NodeJS</p>
+				<hr>
+				<ul>
+					<li><a href="#package-installation--usage">Installation &amp; Usage</a></li>
+				</ul>
+				<hr>
+				<a href="#package-installation-amp-usage" id="package-installation-amp-usage" style="color: inherit; text-decoration: none;">
+					<h2>:package: Installation &amp; Usage</h2>
+				</a>
+				<p>Install it via the npm registry:</p>
+				<pre><code><span style="color: #001080">npm</span><span style="color: #000000"> </span><span style="color: #001080">install</span><span style="color: #000000"> -</span><span style="color: #001080">g</span><span style="color: #000000"> </span><span style="color: #001080">uhst</span><span style="color: #000000">-</span><span style="color: #001080">server</span>
+</code></pre>
+				<p><strong>Usage:</strong></p>
+				<p>You can start the Express.js server with:</p>
+				<pre><code class="language-bash"><span style="color: #000000">./uhst</span>
+</code></pre>
+				<p>By default it listens on 127.0.0.1 and port 3000 (<a href="http://127.0.0.1:3000">http://127.0.0.1:3000</a>). You can specify host and port by setting the environment variables <code>HOST</code> and <code>PORT</code>:</p>
+				<pre><code class="language-bash"><span style="color: #000000">HOST=0.0.0.0 PORT=80 uhst</span>
+</code></pre>
+				<p>Set the environment variable <code>JWT_SECRET</code> to specify a HS256 secret to use for signing the tokens. This is useful for example when restarting the relay if you want to ensure existing tokens are still valid. If this variable is not set a random secret will be generated at runtime.</p>
+				<p><strong>Note: Set UHST_PUBLIC_RELAY=true and the relay will retrieve its prefix from the public relays directory (<a href="https://github.com/uhst/relays/blob/main/list.json">https://github.com/uhst/relays/blob/main/list.json</a>) the first time it receives ?action=host or ?action=ping POST request.</strong><br>The relay has to be listed in the directory with its unique prefix. All UHST users who use this prefix as part of their hostId will connect to this relay. However, there is no authentication so every UHST relay is currently &quot;open&quot; by default. Thus, UHST_PUBLIC_RELAY flag controls only the advertisement of this relay, even with UHST_PUBLIC_RELAY=false any UHST user can manually connect to this relay. Only HTTPS-accessible relays can be registered in the directory.</p>
+				<pre><code class="language-bash"><span style="color: #000000">UHST_PUBLIC_RELAY=true uhst</span>
+</code></pre>
+				<p><strong>NewRelic:</strong></p>
+				<p>UHST Relay supports NewRelic. The goal is to monitor how the relay is used and plan for scaling / adding new instances. To enable NewRelic, set the following environment variable:  </p>
+				<p><code>NEW_RELIC_LICENSE_KEY=</code> Your New Relic license key. For example, license_key: &#39;40HexadecimalCharacters&#39;.</p>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class=" ">
+						<a href="modules.html">Exports</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-enum">
+						<a href="enums/tokentype.html" class="tsd-kind-icon">Token<wbr>Type</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/clientconfiguration.html" class="tsd-kind-icon">Client<wbr>Configuration</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/clienttokenpayload.html" class="tsd-kind-icon">Client<wbr>Token<wbr>Payload</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/hostconfiguration.html" class="tsd-kind-icon">Host<wbr>Configuration</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/hostmessage.html" class="tsd-kind-icon">Host<wbr>Message</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/hosttokenpayload.html" class="tsd-kind-icon">Host<wbr>Token<wbr>Payload</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/message.html" class="tsd-kind-icon">Message</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/requestwithuser.html" class="tsd-kind-icon">Request<wbr>With<wbr>User</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/responsetokenpayload.html" class="tsd-kind-icon">Response<wbr>Token<wbr>Payload</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/tokenpayload.html" class="tsd-kind-icon">Token<wbr>Payload</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#config" class="tsd-kind-icon">config</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#decodetoken" class="tsd-kind-icon">decode<wbr>Token</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#initclient" class="tsd-kind-icon">init<wbr>Client</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#inithost" class="tsd-kind-icon">init<wbr>Host</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#listen" class="tsd-kind-icon">listen</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#ping" class="tsd-kind-icon">ping</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#protect" class="tsd-kind-icon">protect</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#sendmessage" class="tsd-kind-icon">send<wbr>Message</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="modules.html#signtoken" class="tsd-kind-icon">sign<wbr>Token</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
