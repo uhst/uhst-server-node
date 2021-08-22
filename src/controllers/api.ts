@@ -18,6 +18,11 @@ import {
 import { RequestWithUser } from '../models/RequestWithUser';
 import { Message } from '../models/Message';
 import { HostMessage } from '../models/HostMessage';
+import {
+  RelayEvent,
+  isRelayEvent,
+  RelayEventType,
+} from '../models/RelayEvent';
 import { PublicRelay } from '../models/PublicRelay';
 
 interface SenderFunction {
@@ -39,7 +44,7 @@ export const ping = async (req: Request, res: Response) => {
   if (isPublicRelay && !publicHostIdPrefix) {
     await getPublicHostIdPrefix(req);
   }
-  res.send({
+  res.json({
     pong: req.query.timestamp ? parseInt(req.query.timestamp as string) : null,
   });
 };
@@ -74,7 +79,7 @@ export const initHost = async (req: Request, res: Response) => {
       hostId: hostId,
       hostToken: signToken(hostToken),
     };
-    res.send(config);
+    res.json(config);
   }
 };
 
@@ -99,7 +104,7 @@ export const initClient = (req: Request, res: Response) => {
     const config: ClientConfiguration = {
       clientToken: signToken(clientToken),
     };
-    res.send(config);
+    res.json(config);
   }
 };
 
@@ -203,8 +208,9 @@ const getPublicHostIdPrefix = async (req: Request) => {
     const relays: PublicRelay[] = await res.json();
     publicHostIdPrefix = findPrefixByUrl(relays, url);
   } catch (err) {
+    console.error(err);
     console.error(
-      `Failed obtaining public prefix. Please ensure the relay can access the Internet and ${url} exists in the UHST relays list file on GitHub.`
+      `Failed obtaining public prefix. Please ensure the relay can access the Internet and ${url} exists in the UHST relays list file: ${relaysListUrl}.`
     );
   }
 };
@@ -219,19 +225,24 @@ const findPrefixByUrl = (relays: PublicRelay[], url: string): string => {
 };
 
 const broadcastToClients = (
-  clients: Map<String, SenderFunction>,
-  clientIds: string[],
+  hostId: string,
   message: Message
-): Map<string, boolean> => {
-  let result = new Map<string, boolean>();
-  for (let clientId of clientIds) {
-    const sendToClient = clients.get(clientId);
-    if (sendToClient) {
-      sendToClient(message);
-      result.set(clientId, true);
+): Map<string, boolean> | null => {
+  const clients = hosts.get(hostId);
+  if (clients) {
+    const clientIds = getConnectedClientIds(hostId);
+    let result = new Map<string, boolean>();
+    for (let clientId of clientIds) {
+      const sendToClient = clients.get(clientId);
+      if (sendToClient) {
+        sendToClient(message);
+        result.set(clientId, true);
+      }
     }
+    return result;
+  } else {
+    return null;
   }
-  return result;
 };
 
 const sendMessageToClient = (
@@ -246,7 +257,7 @@ const sendMessageToClient = (
     sendToClient({
       body: req.body,
     });
-    res.sendStatus(200);
+    res.json({});
   } else {
     res.sendStatus(400);
   }
@@ -269,7 +280,7 @@ const sendMessageToHost = (
       body: req.body,
     };
     sendToHost(message);
-    res.sendStatus(200);
+    res.json({});
   } else {
     res.sendStatus(400);
   }
@@ -280,19 +291,16 @@ const broadcastMessage = (
   res: Response,
   hostToken: HostTokenPayload
 ) => {
-  const clients = hosts.get(hostToken.hostId);
-  if (clients) {
-    const clientIds = [];
-    const message: Message = {
-      body: req.body,
-    };
-    for (let clientId of clients.keys()) {
-      if (clientId !== hostToken.hostId) {
-        clientIds.push(clientId.toString());
-      }
-    }
-    let result = broadcastToClients(clients, clientIds, message);
-    res.json(result);
+  const message: Message = {
+    body: req.body,
+  };
+  const result = broadcastToClients(hostToken.hostId, message);
+  if (result) {
+    let jsonObject: any = {};
+    result.forEach((value, key) => {
+      jsonObject[key] = value;
+    });
+    res.json(jsonObject);
   } else {
     res.sendStatus(400);
   }
@@ -307,13 +315,35 @@ const addClient = (
 ) => {
   const disconnect = () => {
     clientConnections.delete(clientId);
-    if (hosts.get(hostId)?.size === 0) {
+    const clients = hosts.get(hostId);
+    if (!clients || clients.size === 0) {
       // last client has left, remove host
       hosts.delete(hostId);
+    } else {
+      if (hostId === clientId) {
+        // host has disconnected, notify clients
+        broadcastToClients(hostId, <RelayEvent>{
+          eventType: RelayEventType.HOST_CLOSED,
+          body: hostId,
+        });
+      } else {
+        // client has disconnected, notify host
+        const sendToHost = clients.get(hostId);
+        if (sendToHost) {
+          sendToHost(<RelayEvent>{
+            eventType: RelayEventType.CLIENT_CLOSED,
+            body: clientId,
+          });
+        }
+      }
     }
   };
   clientConnections.set(clientId, (message: Message) => {
-    res.sse.data(message);
+    if (isRelayEvent(message)) {
+      res.sse.event('relay_event', message);
+    } else {
+      res.sse.data(message);
+    }
   });
   req.on('error', disconnect);
   res.on('error', disconnect);
@@ -330,4 +360,17 @@ const isHostConnected = (hostId: string): boolean => {
     result = connections.has(hostId);
   }
   return result;
+};
+
+const getConnectedClientIds = (hostId: string): string[] => {
+  const clientIds: string[] = [];
+  const clients = hosts.get(hostId);
+  if (clients) {
+    for (let clientId of clients.keys()) {
+      if (clientId !== hostId) {
+        clientIds.push(clientId.toString());
+      }
+    }
+  }
+  return clientIds;
 };
