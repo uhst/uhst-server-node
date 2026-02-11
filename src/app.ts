@@ -2,11 +2,15 @@
 import express = require('express');
 import cors = require('cors');
 import { sse } from '@toverux/expresse';
-let version = '';
+let version = '0.0.0';
 try {
-    version = require('../package.json').version; // prod
+    version = require('../package.json').version;
 } catch (e) {
-    version = require('../../package.json').version; // dev
+    try {
+        version = require('../../package.json').version;
+    } catch (e2) {
+        // fallback to default
+    }
 }
 
 // Controllers (route handlers)

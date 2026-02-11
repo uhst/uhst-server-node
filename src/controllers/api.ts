@@ -29,7 +29,7 @@ interface SenderFunction {
   (message: Message): void;
 }
 
-const isPublicRelay = process.env.UHST_PUBLIC_RELAY;
+const isPublicRelay = () => process.env.UHST_PUBLIC_RELAY === 'true' || process.env.UHST_PUBLIC_RELAY === '1';
 const relaysListUrl =
   process.env.UHST_RELAYS_LIST ||
   'https://raw.githubusercontent.com/uhst/relays/main/list.json';
@@ -41,7 +41,7 @@ let publicHostIdPrefix: string = '';
  * @route POST /?action=ping[&timestamp=<optional-timestamp-to-send-back>]
  */
 export const ping = async (req: Request, res: Response) => {
-  if (isPublicRelay && !publicHostIdPrefix) {
+  if (isPublicRelay() && !publicHostIdPrefix) {
     await getPublicHostIdPrefix(req);
   }
   res.json({
@@ -61,7 +61,7 @@ export const ping = async (req: Request, res: Response) => {
  * @route POST /?action=host[&hostId=<optional-host-id>]
  */
 export const initHost = async (req: Request, res: Response) => {
-  if (isPublicRelay && !publicHostIdPrefix) {
+  if (isPublicRelay() && !publicHostIdPrefix) {
     await getPublicHostIdPrefix(req);
   }
   let hostId = req.query.hostId as string;
@@ -193,9 +193,9 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
 };
 
 const getHostId = async (req: Request) => {
-  let hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay ? 4 : 6)}`;
+  let hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay() ? 4 : 6)}`;
   while (isHostConnected(hostId)) {
-    hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay ? 4 : 6)}`;
+    hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay() ? 4 : 6)}`;
   }
   return hostId;
 };
