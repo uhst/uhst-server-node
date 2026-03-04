@@ -1,7 +1,7 @@
 'use strict';
-import jwtHandler = require('express-jwt');
+import { expressjwt } from 'express-jwt';
 import jwt = require('jsonwebtoken');
-import { Request } from 'express';
+import { Request, RequestHandler } from 'express';
 import { Algorithm, SignOptions, VerifyOptions } from 'jsonwebtoken';
 import { config as jwtConfig } from '../config/jwt';
 import { TokenPayload } from '../models/TokenPayload';
@@ -35,16 +35,16 @@ const getVerifyOptions = () => {
  * Token is required by this handler and it will return
  * error 401 if not provided.
  */
-export const protect = () => {
-    return jwtHandler({
+export const protect = (): RequestHandler => {
+    return expressjwt({
         secret: jwtConfig.secret,
-        algorithms: jwtConfig.algorithms,
+        algorithms: jwtConfig.algorithms as Algorithm[],
         credentialsRequired: true,
         getToken: function fromHeaderOrQuerystring(req: Request) {
             if (req.query && req.query.token) {
-                return req.query.token;
+                return req.query.token as string;
             }
-            return null;
+            return undefined;
         }
     });
 }

@@ -12,3 +12,4 @@ export * from './models/HostMessage';
 export * from './models/Message';
 export * from './models/RequestWithUser';
 export * from './models/TokenPayload';
+export * from './middleware/sse';

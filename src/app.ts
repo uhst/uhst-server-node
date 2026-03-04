@@ -1,7 +1,7 @@
 'use strict';
 import express = require('express');
 import cors = require('cors');
-import { sse } from '@toverux/expresse';
+import { sse } from './middleware/sse';
 let version = '0.0.0';
 try {
     version = require('../package.json').version;
@@ -17,7 +17,7 @@ try {
 import * as apiController from './controllers/api';
 import * as authController from './controllers/auth';
 
-const app = express();
+const app: express.Express = express();
 
 const protect = authController.protect();
 
