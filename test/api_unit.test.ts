@@ -4,12 +4,12 @@ import * as proxyquire from "proxyquire";
 
 describe("API Unit Tests", () => {
     let api: any;
-    let randomizeStub: sinon.SinonStub;
+    let randomDigitsStub: sinon.SinonStub;
 
     beforeEach(() => {
-        randomizeStub = sinon.stub();
+        randomDigitsStub = sinon.stub();
         api = proxyquire("../src/controllers/api", {
-            'randomatic': randomizeStub,
+            '../utils/random': { randomDigits: randomDigitsStub },
             '@noCallThru': true
         });
     });
@@ -27,7 +27,7 @@ describe("API Unit Tests", () => {
         
         // 2. Mock listen to make it 'connected'
         const reqListen: any = { 
-            user: { type: 'hostToken', hostId: "123456" },
+            auth: { type: 'hostToken', hostId: "123456" },
             on: sinon.stub()
         };
         const resListen: any = {
@@ -40,19 +40,19 @@ describe("API Unit Tests", () => {
         // Now "123456" is in hosts and has the host clientId
         
         // 3. Try to init another host with same ID via randomize
-        randomizeStub.onFirstCall().returns("123456");
-        randomizeStub.onSecondCall().returns("654321");
+        randomDigitsStub.onFirstCall().returns("123456");
+        randomDigitsStub.onSecondCall().returns("654321");
         
         const req2: any = { query: {} };
         await api.initHost(req2, res);
 
-        expect(randomizeStub.calledTwice, "randomize should be called twice").to.be.true;
+        expect(randomDigitsStub.calledTwice, "randomDigits should be called twice").to.be.true;
         expect(res.json.secondCall.args[0].hostId).to.equal("654321");
     });
         
     it("should send SSE comment on host listen", () => {
         const req: any = { 
-            user: { type: 'hostToken', hostId: "host1" },
+            auth: { type: 'hostToken', hostId: "host1" },
             on: sinon.stub()
         };
         const res: any = {
@@ -68,10 +68,10 @@ describe("API Unit Tests", () => {
         const resInit: any = { json: sinon.stub(), sendStatus: sinon.stub() };
         await api.initHost({ query: { hostId: "host1" } }, resInit);
         // host must be connected
-        api.listen({ user: { type: 'hostToken', hostId: "host1" }, on: sinon.stub() }, { sse: { comment: sinon.stub() }, on: sinon.stub() });
+        api.listen({ auth: { type: 'hostToken', hostId: "host1" }, on: sinon.stub() }, { sse: { comment: sinon.stub() }, on: sinon.stub() });
 
         const req: any = { 
-            user: { type: 'clientToken', hostId: "host1", clientId: "client1" },
+            auth: { type: 'clientToken', hostId: "host1", clientId: "client1" },
             on: sinon.stub()
         };
         const res: any = {
@@ -84,14 +84,14 @@ describe("API Unit Tests", () => {
     });
 
     it("should handle invalid token type in listen", () => {
-        const req: any = { user: { type: 'invalid' } };
+        const req: any = { auth: { type: 'invalid' } };
         const res: any = { sendStatus: sinon.stub() };
         api.listen(req, res);
         expect(res.sendStatus.calledWith(400)).to.be.true;
     });
 
     it("should handle invalid token type in sendMessage", () => {
-        const req: any = { user: { type: 'invalid' } };
+        const req: any = { auth: { type: 'invalid' } };
         const res: any = { sendStatus: sinon.stub() };
         api.sendMessage(req, res);
         expect(res.sendStatus.calledWith(400)).to.be.true;
@@ -104,7 +104,7 @@ describe("API Unit Tests", () => {
         
         // Connect the host
         const reqListen: any = { 
-            user: { type: 'hostToken', hostId },
+            auth: { type: 'hostToken', hostId },
             on: sinon.stub()
         };
         const resListen: any = {
@@ -124,7 +124,7 @@ describe("API Unit Tests", () => {
     it("should return 400 if host is already connected in listen", () => {
         const hostId = "alreadyConnected";
         const req: any = { 
-            user: { type: 'hostToken', hostId },
+            auth: { type: 'hostToken', hostId },
             on: sinon.stub()
         };
         const res: any = {
@@ -148,10 +148,10 @@ describe("API Unit Tests", () => {
         const clientId = "client1";
         await api.initHost({ query: { hostId } }, { json: sinon.stub(), sendStatus: sinon.stub() });
         // Host must connect first
-        api.listen({ user: { type: 'hostToken', hostId }, on: sinon.stub() }, { sse: { comment: sinon.stub() }, on: sinon.stub() });
+        api.listen({ auth: { type: 'hostToken', hostId }, on: sinon.stub() }, { sse: { comment: sinon.stub() }, on: sinon.stub() });
 
         const req: any = { 
-            user: { type: 'clientToken', hostId, clientId },
+            auth: { type: 'clientToken', hostId, clientId },
             on: sinon.stub()
         };
         const res: any = {
@@ -205,7 +205,7 @@ describe("API Unit Tests", () => {
         const res: any = { json: sinon.stub() };
         
         // Use a known hostId to avoid randomized call if it fails
-        randomizeStub.returns("1234");
+        randomDigitsStub.returns("1234");
         await api.initHost(req, res);
         // Should log error but succeed
         expect(res.json.calledOnce).to.be.true;

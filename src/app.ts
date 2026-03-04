@@ -1,7 +1,7 @@
 'use strict';
 import express = require('express');
 import cors = require('cors');
-import { sse } from '@toverux/expresse';
+import { sse } from './middleware/sse';
 let version = '0.0.0';
 try {
     version = require('../package.json').version;

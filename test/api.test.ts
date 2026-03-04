@@ -1,6 +1,6 @@
 import request = require("supertest");
 import http = require("http");
-import EventSource = require("eventsource");
+import { EventSource } from "eventsource";
 import { expect } from "chai";
 import { AddressInfo } from "net";
 import app from "../src/app";

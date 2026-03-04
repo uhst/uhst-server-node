@@ -1,6 +1,6 @@
 import request = require("supertest");
 import http = require("http");
-import EventSource = require("eventsource");
+import { EventSource } from "eventsource";
 import { expect } from "chai";
 import { AddressInfo } from "net";
 import app from "../src/app";
@@ -75,9 +75,12 @@ describe("Disconnection logic", () => {
         hostStream.onopen = () => {
             const clientStream = new EventSource(`${base}/?token=${clientToken}`);
             clientStream.onopen = () => {
+                let finished = false;
                 clientStream.addEventListener("relay_event", (evt: any) => {
+                    if (finished) return;
                     const event = JSON.parse(evt.data);
                     if (event.eventType === "host_closed" && event.body === hostId) {
+                        finished = true;
                         clientStream.close();
                         done();
                     }

@@ -1,9 +1,8 @@
 'use strict';
 import { Response, Request } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { ISseResponse } from '@toverux/expresse';
-import fetch from 'node-fetch';
-import randomize = require('randomatic');
+import { randomUUID } from 'crypto';
+import { ISseResponse } from '../middleware/sse';
+import { randomDigits } from '../utils/random';
 
 import { signToken } from './auth';
 import { HostConfiguration } from '../models/HostConfiguration';
@@ -99,7 +98,7 @@ export const initClient = (req: Request, res: Response) => {
     const clientToken: ClientTokenPayload = {
       type: TokenType.CLIENT,
       hostId: hostId,
-      clientId: uuidv4(),
+      clientId: randomUUID(),
     };
     const config: ClientConfiguration = {
       clientToken: signToken(clientToken),
@@ -120,7 +119,7 @@ export const initClient = (req: Request, res: Response) => {
  * @route POST /?token=<clientToken|responseToken|hostToken>
  */
 export const sendMessage = (req: RequestWithUser, res: Response) => {
-  const token: TokenPayload = req.user as TokenPayload;
+  const token: TokenPayload = req.auth as TokenPayload;
   switch (token.type) {
     case TokenType.RESPONSE:
       // message from host to client
@@ -148,7 +147,7 @@ export const sendMessage = (req: RequestWithUser, res: Response) => {
  * @route GET /?token=<clientToken|hostToken>
  */
 export const listen = (req: RequestWithUser, res: ISseResponse) => {
-  const token: TokenPayload = req.user as TokenPayload;
+  const token: TokenPayload = req.auth as TokenPayload;
 
   switch (token.type) {
     case TokenType.HOST:
@@ -193,9 +192,9 @@ export const listen = (req: RequestWithUser, res: ISseResponse) => {
 };
 
 const getHostId = async (req: Request) => {
-  let hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay() ? 4 : 6)}`;
+  let hostId = `${publicHostIdPrefix}${randomDigits(isPublicRelay() ? 4 : 6)}`;
   while (isHostConnected(hostId)) {
-    hostId = `${publicHostIdPrefix}${randomize('0', isPublicRelay() ? 4 : 6)}`;
+    hostId = `${publicHostIdPrefix}${randomDigits(isPublicRelay() ? 4 : 6)}`;
   }
   return hostId;
 };
@@ -205,7 +204,7 @@ const getPublicHostIdPrefix = async (req: Request) => {
   console.log(`Getting prefix for ${url}`);
   try {
     const res = await fetch(relaysListUrl);
-    const relays: PublicRelay[] = await res.json();
+    const relays = await res.json() as PublicRelay[];
     publicHostIdPrefix = findPrefixByUrl(relays, url);
   } catch (err) {
     console.error(err);
