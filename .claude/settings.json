@@ -4,7 +4,13 @@
       "Bash(npm run test:coverage)",
       "Bash(pnpm --version)",
       "Bash(pnpm install)",
-      "Bash(pnpm test)"
+      "Bash(pnpm test)",
+      "Bash(pnpm info typedoc versions --json)",
+      "Bash(pnpm info typedoc@0.28 version)",
+      "WebFetch(domain:github.com)",
+      "Bash(pnpm add -D typedoc@^0.28.0)",
+      "Bash(pnpm run build)",
+      "Bash(npx typedoc)"
     ]
   }
 }
