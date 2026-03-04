@@ -313,6 +313,7 @@ const addClient = (
   clientConnections: Map<String, SenderFunction>
 ) => {
   const disconnect = () => {
+    if (!clientConnections.has(clientId)) return;
     clientConnections.delete(clientId);
     const clients = hosts.get(hostId);
     if (!clients || clients.size === 0) {
