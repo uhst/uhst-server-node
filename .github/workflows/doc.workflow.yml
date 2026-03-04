@@ -3,11 +3,13 @@ on:
   push:
     branches:
       - master
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 jobs:
   build:
-    name: Publishing UHST Server Node Docs to GitHub pages
-    env:
-      my_secret: ${{secrets.COMMIT_SECRET}}
+    name: Build docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,21 +18,19 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-      - run: |
-          pnpm install
-          pnpm run dist
-          cd docs
-          touch .nojekyll
-          git init
-          # type configurations: your user.email and user.name followed lines
-          # git config --global user.email your_email
-          # git config --global user.name your_name
-          git config --global user.email ${{secrets.USER_EMAIL}}
-          git config --global user.name ${{secrets.USER_NAME}}
-          git status
-          # change this remote url for examle your remote url is then the following:
-          git remote add origin https://${{secrets.COMMIT_SECRET}}@github.com/uhst/uhst-server-node.git
-          git checkout -b gh-pages
-          git add --all
-          git commit -m "docs"
-          git push origin gh-pages -f
+      - run: pnpm install
+      - run: pnpm run dist
+      - run: touch docs/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
