@@ -17,7 +17,7 @@ try {
 import * as apiController from './controllers/api';
 import * as authController from './controllers/auth';
 
-const app = express();
+const app: express.Express = express();
 
 const protect = authController.protect();
 
